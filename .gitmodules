@@ -1,0 +1,3 @@
+[submodule "Mechanical-datasets"]
+	path = Mechanical-datasets
+	url = https://github.com/cathysiyu/Mechanical-datasets.git
