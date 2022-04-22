@@ -11,6 +11,11 @@ from datetime import datetime
 import random
 args = None
 
+import psutil
+# Getting % usage of virtual_memory
+print('System RAM % used:', psutil.virtual_memory()[2])
+
+
 def parse_args():
 
     parser = argparse.ArgumentParser(description='Inference')
@@ -22,8 +27,7 @@ def parse_args():
     parser.add_argument('--processing_type', type=str, choices=['R_A', 'R_NA', 'O_A'], default='O_A',
                         help='R_A: random split with data augmentation, R_NA: random split without data augmentation, O_A: order split with data augmentation')
     parser.add_argument('--checkpoint_dir', type=str, default='./checkpoint', help='the directory to save the model')
-    parser.add_argument('--lr', type=float, default=0.001, help='the initial learning rate')
-    parser.add_argument('--weight_decay', type=float, default=1e-5, help='the weight decay')
+
 
     args = parser.parse_args()
     return args
@@ -74,29 +78,31 @@ class inference(object):
             name = k.replace("module.", "") #remove module string
             new_state_dict[name] = v
         self.model.load_state_dict(model_checkpoint, strict=False)
-        # print(self.model)
         self.criterion = torch.nn.CrossEntropyLoss()
-        # self.optimizer = torch.optim.Adam(self.model.parameters(), lr=args.lr,
-        #                                 weight_decay=args.weight_decay)
- 
+        # Getting % usage of virtual_memory ( 3rd field)
+        print('System RAM % used in setup:', psutil.virtual_memory()[2])
+
+
     def evaluate(self):
         
         for phase in ['val']:
             valid_loss = 0.0
             self.model.eval()
-            epoch_loss = 0.0
-            epoch_acc = 0.0
             now = datetime.now()
             random.seed(2022)
             randomlist = random.sample(range(0, 419), 10)
             with open("values.txt","w") as f:
                 f.write(f"{str(now)}\n")
+            # Getting % usage of virtual_memory ( 3rd field)
+            print('System RAM % used in inference:', psutil.virtual_memory()[2])
             with torch.set_grad_enabled(phase == 'train'):
              
      
                 for batch_id, (data, labels) in enumerate(self.val_dataloader[phase]):
                                     # forward
                     for val in randomlist:
+                        # Getting % usage of virtual_memory ( 3rd field)
+                        #print(f"RAM memory % used in for {batch_id}:{psutil.virtual_memory()[2]}")
                         if val == batch_id:
                             logits = self.model(data)
                             loss = self.criterion(logits, labels)
@@ -105,19 +111,19 @@ class inference(object):
                             loss_temp = loss.item() * data.size(0)
                             with open("values.txt","a") as f:
                                 f.write(f"{batch_id}; Correct: {correct}; loss: {loss_temp}\n")
-                            epoch_loss += loss_temp
-                            epoch_acc += correct
                             print(f"Correct: {correct}, Loss Temp: {loss_temp}\n")
                             break
+            # Getting % usage of virtual_memory
+            print('System RAM % used in inference:', psutil.virtual_memory()[2])
 
 if __name__ == '__main__':
     args = parse_args()
 
     save_dir = os.path.join(args.checkpoint_dir)
-    
+
     # set the logger
     setlogger(os.path.join(save_dir, 'inference.log'))
-    
+
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     try:

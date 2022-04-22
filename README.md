@@ -6,13 +6,17 @@ This repository is under continuous development, currently being able to run a M
 
 ## First time use
 
-`docker build -t *img_name*:*tag* .`
+`docker build -t inf_bench:latest .`
 
-Follwed by: `bash seq_memory_limit.sh`
+Follwed by: `bash docker_monitor.sh & bash seq_memory_limit.sh`
 
 
 ## Description
-At the moment, given the image built from the present Dockerfile, the container will run 10 seeded random observations from the SEU evaluation dataset with an MLP model. By running the shell script after the image is built, it will recursively run the container, gradually decreasing memory size  
+At the moment, given the image built from the present Dockerfile, the container will run 10 seeded random observations from the SEU evaluation dataset with an MLP model. 
+
+The `seq_memory_limit.sh` shell script recursively runs the container, checks the return value (0 - succesful run, error otherwise), then gradually decreases memory size.
+
+`docker_monitor.sh` runs the `docker stats` command and saves the output, alongside the date and time, in the `inference_benchmark.txt` file.
 
 
 
@@ -20,10 +24,12 @@ At the moment, given the image built from the present Dockerfile, the container 
 * check function peak memory usage
 * add other model types and compare memory usage results
 * add other datasets
-
+* analyze `--memory-swap` option (benefits/drawbacks)
 
 ## License
 For open source projects, say how it is licensed.
 
 ## Project status
-Active. Following steps TBD
+Active
+
+Following steps TBD
