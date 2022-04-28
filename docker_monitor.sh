@@ -1,5 +1,7 @@
 #!/bin/bash
-INTERVAL=0.5 # interval (in seconds for logging information)
+
+#TODO: add intrerupt flag for monitor
+INTERVAL=1 # interval (in seconds for logging information)
 OUTNAME=inference_benchmark.txt # log file  name
 
 # function for logging container stats
@@ -11,5 +13,5 @@ update_file() {
 while true;
 do
     update_file > /dev/null;
-    #sleep $INTERVAL;
+    sleep $INTERVAL;
 done

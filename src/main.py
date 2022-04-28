@@ -16,7 +16,7 @@ args = None
 import psutil
 # Getting % usage of virtual_memory
 # print('System RAM % used:', psutil.virtual_memory()[2])
-mem_log_file=open('memory_profiler.log','w+')
+mem_log_file=open('/inference/memory_profiler.log','a+')
 
 @profile(stream=mem_log_file)
 def parse_args():
@@ -141,13 +141,17 @@ if __name__ == '__main__':
 
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
+    
     try:
         eval_output = inference(args, save_dir)
         eval_output.setup()
         eval_output.evaluate()
         mem_log_file.close()
-        # while True:
-        #     pass
+        print("Reached while loop")
+        while True:
+            pass
+    except KeyboardInterrupt:
+        sys.stderr.write("Interrupt detected...")
     except MemoryError:
         sys.stderr.write('\n\nERROR: Memory Exception\n')
         sys.exit(1)
