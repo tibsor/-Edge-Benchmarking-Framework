@@ -12,7 +12,7 @@ from datetime import datetime
 import random
 from memory_profiler import profile
 args = None
-
+time_list={"args_time":None,"setup_time":None, "init_time":None, "eval_time":None }
 import psutil
 # Getting % usage of virtual_memory
 # print('System RAM % used:', psutil.virtual_memory()[2])
@@ -34,6 +34,7 @@ def parse_args():
     args = parser.parse_args()
     end = time.time()
     print("parse_args() function takes", end-start, "seconds")
+    time_list["args_time"]=end-start
     return args
 
 class inference(object):
@@ -44,7 +45,8 @@ class inference(object):
         self.save_dir = save_dir
         end = time.time()
         print("class __init__() function takes", end-start, "seconds")
-        
+        time_list["init_time"]=end-start
+
     @profile(stream=mem_log_file)
     def setup(self):
         """
@@ -94,7 +96,8 @@ class inference(object):
         # print('System RAM % used in setup:', psutil.virtual_memory()[2])
         end = time.time()
         print("class setup() function takes", end-start, "seconds")
-        
+        time_list["setup_time"]=end-start
+
     @profile(stream=mem_log_file)
     def evaluate(self):
         start = time.time()
@@ -104,7 +107,7 @@ class inference(object):
             now = datetime.now()
             random.seed(2022)
             randomlist = random.sample(range(0, 419), 10)
-            with open("values.txt","w") as f:
+            with open("/inference/volume_data/values.txt","a+") as f:
                 f.write(f"{str(now)}\n")
             # Getting % usage of virtual_memory ( 3rd field)
             # print('System RAM % used in inference:', psutil.virtual_memory()[2])
@@ -122,7 +125,7 @@ class inference(object):
                             pred = logits.argmax(dim=1)
                             correct = torch.eq(pred, labels).float().sum().item()
                             loss_temp = loss.item() * data.size(0)
-                            with open("values.txt","a") as f:
+                            with open("/inference/volume_data/values.txt","a") as f:
                                 f.write(f"{batch_id}; Correct: {correct}; loss: {loss_temp}\n")
                             #print(f"Correct: {correct}, Loss Temp: {loss_temp}\n")
                             break
@@ -130,7 +133,8 @@ class inference(object):
             # print('System RAM % used in inference:', psutil.virtual_memory()[2])
         end = time.time()
         print("class inference() function takes", end-start, "seconds")
-            
+        time_list["eval_time"]=end-start
+
 if __name__ == '__main__':
     args = parse_args()
 
@@ -147,9 +151,13 @@ if __name__ == '__main__':
         eval_output.setup()
         eval_output.evaluate()
         mem_log_file.close()
-        print("Reached while loop")
-        while True:
-            pass
+        print(time_list,"\n")
+        with open("/inference/volume_data/time_values.txt",'a+') as f:
+            f.write(f"{str(time_list)}\n")
+
+        # print("Reached while loop")
+        # while True:
+        #     pass
     except KeyboardInterrupt:
         sys.stderr.write("Interrupt detected...")
     except MemoryError:

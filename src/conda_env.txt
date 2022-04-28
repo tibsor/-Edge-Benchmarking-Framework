@@ -1,6 +1,6 @@
 #
 # Name                    Version          
-numpy>=1.16.2           
+#numpy>=1.16.2   #pandas installs numpy by itself      
 #opencv-python==4.1.0.25
 pandas>=0.24.2           
 pillow>=6.1.0            
@@ -10,5 +10,5 @@ scikit-learn>=0.21.3
 scipy>=1.2.1            
 torchvision>=0.4.2
 tqdm>=4.31.1           
-psutil
+#psutil
 memory_profiler
