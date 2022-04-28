@@ -21,10 +21,13 @@ The `seq_memory_limit.sh` shell script recursively runs the container, checks th
 
 
 ## Roadmap
-* check function peak memory usage
+* check function peak memory usage - partly done - plots next
+* add CPU benchmarking
+* create shared volume to be used by both inference & train benchmark
 * add other model types and compare memory usage results
 * add other datasets
 * analyze `--memory-swap` option (benefits/drawbacks)
+
 
 ## License
 For open source projects, say how it is licensed.
@@ -32,4 +35,3 @@ For open source projects, say how it is licensed.
 ## Project status
 Active
 
-Following steps TBD

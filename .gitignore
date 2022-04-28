@@ -1,7 +1,3 @@
 *.txt
 .vscode
 .devcontainer
-*.pyc
-
-src/CNN_Datasets/__pycache__/*
-src/CNN_Datasets/__pycache__/__init__.cpython-37.pyc

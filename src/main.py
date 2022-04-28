@@ -1,6 +1,7 @@
 # importing libraries
 import sys
 import os
+import time
 import warnings
 import argparse
 from utils.logger import setlogger
@@ -9,15 +10,18 @@ import models
 import torch
 from datetime import datetime
 import random
+from memory_profiler import profile
 args = None
 
 import psutil
 # Getting % usage of virtual_memory
-print('System RAM % used:', psutil.virtual_memory()[2])
+# print('System RAM % used:', psutil.virtual_memory()[2])
+mem_log_file=open('memory_profiler.log','w+')
 
-
+@profile(stream=mem_log_file)
 def parse_args():
-
+    start = time.time()
+    
     parser = argparse.ArgumentParser(description='Inference')
     # basic parameters
     parser.add_argument('--model_name', type=str, default='MLP', help='the name of the model')
@@ -27,20 +31,27 @@ def parse_args():
     parser.add_argument('--processing_type', type=str, choices=['R_A', 'R_NA', 'O_A'], default='O_A',
                         help='R_A: random split with data augmentation, R_NA: random split without data augmentation, O_A: order split with data augmentation')
     parser.add_argument('--checkpoint_dir', type=str, default='./checkpoint', help='the directory to save the model')
-
-
     args = parser.parse_args()
+    end = time.time()
+    print("parse_args() function takes", end-start, "seconds")
     return args
 
 class inference(object):
+    @profile(stream=mem_log_file)
     def __init__(self, args, save_dir):
+        start = time.time()
         self.args = args
         self.save_dir = save_dir
+        end = time.time()
+        print("class __init__() function takes", end-start, "seconds")
+        
+    @profile(stream=mem_log_file)
     def setup(self):
         """
         Initialize the dataset, model
         :return:
         """
+        start = time.time()
         args = self.args
         if torch.cuda.is_available():
             self.device = torch.device("cuda")
@@ -80,11 +91,13 @@ class inference(object):
         self.model.load_state_dict(model_checkpoint, strict=False)
         self.criterion = torch.nn.CrossEntropyLoss()
         # Getting % usage of virtual_memory ( 3rd field)
-        print('System RAM % used in setup:', psutil.virtual_memory()[2])
-
-
-    def evaluate(self):
+        # print('System RAM % used in setup:', psutil.virtual_memory()[2])
+        end = time.time()
+        print("class setup() function takes", end-start, "seconds")
         
+    @profile(stream=mem_log_file)
+    def evaluate(self):
+        start = time.time()
         for phase in ['val']:
             valid_loss = 0.0
             self.model.eval()
@@ -94,7 +107,7 @@ class inference(object):
             with open("values.txt","w") as f:
                 f.write(f"{str(now)}\n")
             # Getting % usage of virtual_memory ( 3rd field)
-            print('System RAM % used in inference:', psutil.virtual_memory()[2])
+            # print('System RAM % used in inference:', psutil.virtual_memory()[2])
             with torch.set_grad_enabled(phase == 'train'):
              
      
@@ -111,11 +124,13 @@ class inference(object):
                             loss_temp = loss.item() * data.size(0)
                             with open("values.txt","a") as f:
                                 f.write(f"{batch_id}; Correct: {correct}; loss: {loss_temp}\n")
-                            print(f"Correct: {correct}, Loss Temp: {loss_temp}\n")
+                            #print(f"Correct: {correct}, Loss Temp: {loss_temp}\n")
                             break
             # Getting % usage of virtual_memory
-            print('System RAM % used in inference:', psutil.virtual_memory()[2])
-
+            # print('System RAM % used in inference:', psutil.virtual_memory()[2])
+        end = time.time()
+        print("class inference() function takes", end-start, "seconds")
+            
 if __name__ == '__main__':
     args = parse_args()
 
@@ -130,6 +145,7 @@ if __name__ == '__main__':
         eval_output = inference(args, save_dir)
         eval_output.setup()
         eval_output.evaluate()
+        mem_log_file.close()
         # while True:
         #     pass
     except MemoryError:
