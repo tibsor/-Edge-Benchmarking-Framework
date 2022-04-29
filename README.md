@@ -18,11 +18,11 @@ The `seq_memory_limit.sh` shell script recursively runs the container, checks th
 
 `docker_monitor.sh` runs the `docker stats` command and saves the output, alongside the date and time, in the `inference_benchmark.txt` file.
 
-
+After the runs are done, the script calls `plot.py` which gives a visual representation of the obtained results. 
 
 ## Roadmap
 * check function peak memory usage - partly done - plots next
-* add CPU benchmarking
+* add CPU benchmarking 
 * create shared volume to be used by both inference & train benchmark
 * add other model types and compare memory usage results
 * add other datasets
@@ -34,4 +34,6 @@ For open source projects, say how it is licensed.
 
 ## Project status
 Active
+Initial memory test results below
+![My Image](initial_RAM_results.png)
 

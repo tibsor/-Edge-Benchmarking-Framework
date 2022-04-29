@@ -7,16 +7,23 @@ import argparse
 from utils.logger import setlogger
 import logging
 import models
+import csv
 import torch
 from datetime import datetime
 import random
 from memory_profiler import profile
 args = None
-time_list={"args_time":None,"setup_time":None, "init_time":None, "eval_time":None }
+time_val_header=["args_time", "init_time", "setup_time", "eval_time"]
+time_dict={"args_time":None, "init_time":None, "setup_time":None, "eval_time":None }
+time_list=[]
 import psutil
 # Getting % usage of virtual_memory
 # print('System RAM % used:', psutil.virtual_memory()[2])
-mem_log_file=open('/inference/memory_profiler.log','a+')
+mem_log_file=open('/inference/volume_data/memory_profiler.log','a+')
+if not(os.path.exists("/inference/volume_data/runtime_values.csv")):
+    with open("/inference/volume_data/runtime_values.csv",'a+', encoding='UTF8', newline="") as f:
+            writer=csv.writer(f)
+            writer.writerow(time_val_header)
 
 @profile(stream=mem_log_file)
 def parse_args():
@@ -34,7 +41,8 @@ def parse_args():
     args = parser.parse_args()
     end = time.time()
     print("parse_args() function takes", end-start, "seconds")
-    time_list["args_time"]=end-start
+    time_dict["args_time"]=end-start
+    time_list.append(end-start)
     return args
 
 class inference(object):
@@ -45,7 +53,9 @@ class inference(object):
         self.save_dir = save_dir
         end = time.time()
         print("class __init__() function takes", end-start, "seconds")
-        time_list["init_time"]=end-start
+        time_dict["init_time"]=end-start
+        time_list.append(end-start)
+
 
     @profile(stream=mem_log_file)
     def setup(self):
@@ -96,7 +106,9 @@ class inference(object):
         # print('System RAM % used in setup:', psutil.virtual_memory()[2])
         end = time.time()
         print("class setup() function takes", end-start, "seconds")
-        time_list["setup_time"]=end-start
+        time_dict["setup_time"]=end-start
+        time_list.append(end-start)
+        
 
     @profile(stream=mem_log_file)
     def evaluate(self):
@@ -107,8 +119,8 @@ class inference(object):
             now = datetime.now()
             random.seed(2022)
             randomlist = random.sample(range(0, 419), 10)
-            with open("/inference/volume_data/values.txt","a+") as f:
-                f.write(f"{str(now)}\n")
+            # with open("/inference/volume_data/values.txt","a+") as f:
+            #     f.write(f"{str(now)}\n")
             # Getting % usage of virtual_memory ( 3rd field)
             # print('System RAM % used in inference:', psutil.virtual_memory()[2])
             with torch.set_grad_enabled(phase == 'train'):
@@ -125,21 +137,22 @@ class inference(object):
                             pred = logits.argmax(dim=1)
                             correct = torch.eq(pred, labels).float().sum().item()
                             loss_temp = loss.item() * data.size(0)
-                            with open("/inference/volume_data/values.txt","a") as f:
-                                f.write(f"{batch_id}; Correct: {correct}; loss: {loss_temp}\n")
+                            # with open("/inference/volume_data/values.txt","a") as f:
+                            #     f.write(f"{batch_id}; Correct: {correct}; loss: {loss_temp}\n")
                             #print(f"Correct: {correct}, Loss Temp: {loss_temp}\n")
                             break
             # Getting % usage of virtual_memory
             # print('System RAM % used in inference:', psutil.virtual_memory()[2])
         end = time.time()
         print("class inference() function takes", end-start, "seconds")
-        time_list["eval_time"]=end-start
+        time_dict["eval_time"]=end-start
+        time_list.append(end-start)
 
 if __name__ == '__main__':
     args = parse_args()
 
-    save_dir = os.path.join(args.checkpoint_dir)
-
+    #save_dir = os.path.join(args.checkpoint_dir)
+    save_dir = '/inference/checkpoint/'
     # set the logger
     setlogger(os.path.join(save_dir, 'inference.log'))
 
@@ -151,9 +164,10 @@ if __name__ == '__main__':
         eval_output.setup()
         eval_output.evaluate()
         mem_log_file.close()
-        print(time_list,"\n")
-        with open("/inference/volume_data/time_values.txt",'a+') as f:
-            f.write(f"{str(time_list)}\n")
+        print(time_dict,"\n")
+        with open("/inference/volume_data/runtime_values.csv",'a+', encoding='UTF8', newline="") as f:
+            writer=csv.writer(f, delimiter=',')
+            writer.writerow(time_list)
 
         # print("Reached while loop")
         # while True:
