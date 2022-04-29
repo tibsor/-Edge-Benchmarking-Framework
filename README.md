@@ -35,5 +35,5 @@ For open source projects, say how it is licensed.
 ## Project status
 Active
 Initial memory test results below
-![My Image](initial_RAM_results.png)
+![RAM Results](initial_RAM_results.png)
 
