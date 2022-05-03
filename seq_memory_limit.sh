@@ -44,6 +44,7 @@ do
     fi
 done
 #variables to be used for plotting script
+source "./local_env/bin/activate"
 export upper_limit
 export lower_limit
 export step
