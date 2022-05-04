@@ -5,7 +5,6 @@ import time
 import warnings
 import argparse
 from utils.logger import setlogger
-import logging
 import models
 import csv
 import torch
@@ -13,17 +12,37 @@ from datetime import datetime
 import random
 from memory_profiler import profile
 args = None
-time_val_header=["args_time", "init_time", "setup_time", "eval_time"]
 time_dict={"args_time":None, "init_time":None, "setup_time":None, "eval_time":None }
 time_list=[]
 import psutil
+vol_path='/inference/volume_data'
+mem_rt_path=os.path.join(vol_path, 'memory_runtime_values.csv')
+mem_profiler_path=os.path.join(vol_path,'memory_profiler.log')
+cpu_quota_path=os.path.join(vol_path,'cpu_quota_runtime_values.csv')
+csv_header=None
+if "MEM_LIMIT" in os.environ:
+    memory_limit=int(os.environ["MEM_LIMIT"])
+    memory_reserve=memory_limit/2.0
+    csv_header=["timedate", "memory_limit", "args_time", "init_time", "setup_time", "eval_time"]
+    if not(os.path.exists(mem_rt_path)):
+        with open(mem_rt_path,'a+', encoding='UTF8', newline="") as f:
+            writer=csv.writer(f)
+            writer.writerow(csv_header)
+else: 
+    memory_limit=None
+    memory_reserve=None
+
+if "CPU_QUOTA" in os.environ:
+    cpu_quota=int(os.environ["CPU_QUOTA"])
+    cpu_period=100000
+    csv_header=["timedate", "cpu_quota", "args_time", "init_time", "setup_time", "eval_time"]
+else: cpu_quota=None
 # Getting % usage of virtual_memory
 # print('System RAM % used:', psutil.virtual_memory()[2])
-mem_log_file=open('/inference/volume_data/memory_profiler.log','a+')
-if not(os.path.exists("/inference/volume_data/runtime_values.csv")):
-    with open("/inference/volume_data/runtime_values.csv",'a+', encoding='UTF8', newline="") as f:
-            writer=csv.writer(f)
-            writer.writerow(time_val_header)
+mem_log_file=open(mem_profiler_path,'a+')
+
+
+
 
 @profile(stream=mem_log_file)
 def parse_args():
@@ -68,13 +87,11 @@ class inference(object):
         if torch.cuda.is_available():
             self.device = torch.device("cuda")
             self.device_count = torch.cuda.device_count()
-            logging.info('using {} gpus'.format(self.device_count))
             assert args.batch_size % self.device_count == 0, "batch size should be divided by device count"
         else:
-            warnings.warn("gpu is not available")
+            warnings.warn("gpu is not available, using CPU")
             self.device = torch.device("cpu")
             self.device_count = 1
-            logging.info('using {} cpu'.format(self.device_count))
         
         # Load the datasets
         if args.processing_type == 'O_A':
@@ -150,24 +167,27 @@ class inference(object):
 
 if __name__ == '__main__':
     args = parse_args()
-
-    #save_dir = os.path.join(args.checkpoint_dir)
-    save_dir = '/inference/checkpoint/'
-    # set the logger
-    setlogger(os.path.join(save_dir, 'inference.log'))
-
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
-    
+    values_list=[]
     try:
-        eval_output = inference(args, save_dir)
+        eval_output = inference(args, vol_path)
         eval_output.setup()
         eval_output.evaluate()
         mem_log_file.close()
         print(time_dict,"\n")
-        with open("/inference/volume_data/runtime_values.csv",'a+', encoding='UTF8', newline="") as f:
+        if csv_header != None:
+            values_list.append(datetime.now())
+        else: raise("FATAL ERROR!")
+        if memory_limit!=None:
+            values_list.append(memory_limit)
+        if cpu_quota!=None:
+            values_list.append(cpu_quota)
+        values_list.append(time_dict['args_time'])
+        values_list.append(time_dict['init_time'])
+        values_list.append(time_dict['setup_time'])
+        values_list.append(time_dict['eval_time'])
+        with open(mem_rt_path,'a+', encoding='UTF8', newline="") as f:
             writer=csv.writer(f, delimiter=',')
-            writer.writerow(time_list)
+            writer.writerow(values_list)
 
         # print("Reached while loop")
         # while True:
