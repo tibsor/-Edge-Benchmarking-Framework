@@ -34,6 +34,7 @@ For open source projects, say how it is licensed.
 
 ## Project status
 Active
-Initial memory test results below
+Initial memory & CPU test results below
 ![RAM Results](initial_RAM_results.png)
+![CPU Results](cpu_initial_results.png)
 
