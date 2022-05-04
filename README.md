@@ -30,11 +30,11 @@ After the runs are done, the script calls `plot.py` which gives a visual represe
 
 
 ## License
-For open source projects, say how it is licensed.
-
+GPL3 License
 ## Project status
 Active
 Initial memory & CPU test results below
 ![RAM Results](initial_RAM_results.png)
 ![CPU Results](cpu_initial_results.png)
+![CPU Quota Results](cpu_quota_results.png)
 
