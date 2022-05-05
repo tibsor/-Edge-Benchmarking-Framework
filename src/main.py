@@ -15,28 +15,10 @@ args = None
 time_dict={"args_time":None, "init_time":None, "setup_time":None, "eval_time":None }
 time_list=[]
 import psutil
-vol_path='/inference/volume_data'
-mem_rt_path=os.path.join(vol_path, 'memory_runtime_values.csv')
-mem_profiler_path=os.path.join(vol_path,'memory_profiler.log')
-cpu_quota_path=os.path.join(vol_path,'cpu_quota_runtime_values.csv')
 csv_header=None
-if "MEM_LIMIT" in os.environ:
-    memory_limit=int(os.environ["MEM_LIMIT"])
-    memory_reserve=memory_limit/2.0
-    csv_header=["timedate", "memory_limit", "args_time", "init_time", "setup_time", "eval_time"]
-    if not(os.path.exists(mem_rt_path)):
-        with open(mem_rt_path,'a+', encoding='UTF8', newline="") as f:
-            writer=csv.writer(f)
-            writer.writerow(csv_header)
-else: 
-    memory_limit=None
-    memory_reserve=None
+vol_path='/inference/volume_data'
+mem_profiler_path=os.path.join(vol_path,'memory_profiler.log')
 
-if "CPU_QUOTA" in os.environ:
-    cpu_quota=int(os.environ["CPU_QUOTA"])
-    cpu_period=100000
-    csv_header=["timedate", "cpu_quota", "args_time", "init_time", "setup_time", "eval_time"]
-else: cpu_quota=None
 # Getting % usage of virtual_memory
 # print('System RAM % used:', psutil.virtual_memory()[2])
 mem_log_file=open(mem_profiler_path,'a+')
@@ -165,8 +147,52 @@ class inference(object):
         time_dict["eval_time"]=end-start
         time_list.append(end-start)
 
+
+def create_folder(model_name: str = None, dataset: str = None):
+    global memory_limit, cpu_quota, cpu_quota_path, mem_rt_path, csv_header 
+    model_folder = os.path.join(vol_path, model_name)
+    isdir = os.path.isdir(model_folder)
+    if isdir:
+        pass
+    else:
+        os.mkdir(model_folder)
+    dataset_folder = os.path.join(model_folder, dataset)
+    isdir = os.path.isdir(dataset_folder)
+    if isdir:
+        pass
+    else:
+        os.mkdir(dataset_folder)    
+
+    mem_rt_path=os.path.join(vol_path, dataset_folder, 'memory_runtime_values.csv')
+    cpu_quota_path=os.path.join(vol_path, dataset_folder, 'cpu_quota_runtime_values.csv')
+    if "MEM_LIMIT" in os.environ:
+        
+        memory_limit = int(os.environ["MEM_LIMIT"])
+        memory_reserve=memory_limit/2.0
+        csv_header=["timedate", "memory_limit", "args_time", "init_time", "setup_time", "eval_time"]
+        if not(os.path.exists(mem_rt_path)):
+            with open(mem_rt_path,'a+', encoding='UTF8', newline="") as f:
+                writer=csv.writer(f)
+                writer.writerow(csv_header)
+    else: 
+        memory_limit=None
+        memory_reserve=None
+
+    if "CPU_QUOTA" in os.environ:
+        cpu_quota=int(os.environ["CPU_QUOTA"])
+        cpu_period=100000
+        csv_header=["timedate", "cpu_quota", "args_time", "init_time", "setup_time", "eval_time"]
+        if not(os.path.exists(cpu_quota_path)):
+            with open(cpu_quota_path,'a+', encoding='UTF8', newline="") as f:
+                writer=csv.writer(f)
+                writer.writerow(csv_header)
+    else: cpu_quota=None
+
+
+
 if __name__ == '__main__':
     args = parse_args()
+    create_folder(model_name=args.model_name, dataset=args.data_name)
     values_list=[]
     try:
         eval_output = inference(args, vol_path)
@@ -176,18 +202,25 @@ if __name__ == '__main__':
         print(time_dict,"\n")
         if csv_header != None:
             values_list.append(datetime.now())
-        else: raise("FATAL ERROR!")
+        else: raise ValueError("CSV HEADER IS NONE!")
         if memory_limit!=None:
             values_list.append(memory_limit)
+            values_list.append(time_dict['args_time'])
+            values_list.append(time_dict['init_time'])
+            values_list.append(time_dict['setup_time'])
+            values_list.append(time_dict['eval_time'])
+            with open(mem_rt_path,'a+', encoding='UTF8', newline="") as f:
+                writer=csv.writer(f, delimiter=',')
+                writer.writerow(values_list)
         if cpu_quota!=None:
             values_list.append(cpu_quota)
-        values_list.append(time_dict['args_time'])
-        values_list.append(time_dict['init_time'])
-        values_list.append(time_dict['setup_time'])
-        values_list.append(time_dict['eval_time'])
-        with open(mem_rt_path,'a+', encoding='UTF8', newline="") as f:
-            writer=csv.writer(f, delimiter=',')
-            writer.writerow(values_list)
+            values_list.append(time_dict['args_time'])
+            values_list.append(time_dict['init_time'])
+            values_list.append(time_dict['setup_time'])
+            values_list.append(time_dict['eval_time'])
+            with open(cpu_quota_path,'a+', encoding='UTF8', newline="") as f:
+                writer=csv.writer(f, delimiter=',')
+                writer.writerow(values_list)
 
         # print("Reached while loop")
         # while True:
