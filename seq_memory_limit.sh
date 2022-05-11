@@ -6,7 +6,7 @@ echo "Working directory is:$CURRENT_DIR"
 
 # from HIGH_VALUE -> LOW_VALUE
 echo "Looking for files from older runs..."
-rm $CURRENT_DIR/host_data/*
+#rm $CURRENT_DIR/host_data/*
 echo "Please make sure the upper limit is higher than the lower limit!"
 echo "Upper limit number (MBs):"
 read upper_limit
@@ -29,12 +29,17 @@ do
     mem_reserve=`echo "$memory_value/2" | bc`
     echo "Starting inference container with $mem_reserve MB memory reserve and $mem_limit MB memory limit"
     #docker run -it --memory="${mem_limit}m" --memory-reservation="${mem_reserve}m" --memory-swap=256m inf_bench:latest python3 main.py  --model_name MLP --data_name SEU --data_dir /inference/Mechanical-datasets --normlizetype mean-std --processing_type O_A --checkpoint_dir /inference/checkpoint
-    docker run --name bench_test -it -e MEM_LIMIT="$mem_limit" --memory="${mem_limit}m" --memory-reservation="${mem_reserve}m" --memory-swap=256m -v $CURRENT_DIR/host_data:/inference/volume_data --rm inf_bench:latest python3 main.py --model_name MLP --data_name SEU --data_dir /inference/Mechanical-datasets --normlizetype mean-std --processing_type O_A --checkpoint_dir /inference/checkpoint
+    docker run --name bench_test -it -e MEM_LIMIT="$mem_limit" \
+    --memory="${mem_limit}m" \
+    --cpus="1.0" -v $CURRENT_DIR/host_data:/inference/volume_data \
+    --rm inf_bench:latest python3 main.py\
+    --model_name MLP --data_name SEU --data_dir /inference/Mechanical-datasets --normalizetype mean-std --processing_type O_A --checkpoint_dir /inference/checkpoint
     run_output=$?
     echo "Run finished! Clean-up..."
     if [ $run_output -eq 0 ]; then 
         echo "Container return value: $run_output"
         echo "Container ran succesfully! Reducing memory..."
+        sleep 2
     elif [ $run_output -eq 137 ]; then # 137 error in Python is OOM
         echo "Container return value: $run_output"
         echo "Container failed to run!"
@@ -53,6 +58,5 @@ do
     fi
 done
 
-#variables to be used for plotting script
 source "./local_env/bin/activate"
 python3 plot.py

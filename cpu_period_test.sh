@@ -25,7 +25,7 @@ do
 #TODO: add docker monitor process kill
      echo "Starting inference container with CPU quota $cpu_quota"
 
-     docker run --name bench_test -it  -e CPU_QUOTA="$cpu_quota" --cpu-period="100000" --cpu-quota="$cpu_quota" -v $CURRENT_DIR/host_data:/inference/volume_data --rm inf_bench:latest python3 main.py --model_name MLP --data_name SEU --data_dir /inference/Mechanical-datasets --normlizetype mean-std --processing_type O_A --checkpoint_dir /inference/checkpoint
+     docker run --name bench_test -it  -e CPU_QUOTA="$cpu_quota" --cpu-period="100000" --cpu-quota="$cpu_quota" --memory="256m" -v $CURRENT_DIR/host_data:/inference/volume_data --rm inf_bench:latest python3 main.py --model_name MLP --data_name SEU --data_dir /inference/Mechanical-datasets --normalizetype mean-std --processing_type O_A --checkpoint_dir /inference/checkpoint
 done
 # export upper_limit
 # export lower_limit
