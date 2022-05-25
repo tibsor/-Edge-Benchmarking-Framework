@@ -7,7 +7,7 @@ from datasets.SequenceDatasets import dataset
 from datasets.sequence_aug import *
 from tqdm import tqdm
 
-signal_size=1024
+signal_size = 1024
 
 #Data names of 5 bearing fault types under two working conditions
 Bdata = ["ball_20_0.csv","comb_20_0.csv","health_20_0.csv","inner_20_0.csv","outer_20_0.csv","ball_30_2.csv","comb_30_2.csv","health_30_2.csv","inner_30_2.csv","outer_30_2.csv"]
@@ -107,9 +107,9 @@ class SEU(object):
     num_classes = 20
     inputchannel = 1
 
-    def __init__(self, data_dir,normalizetype):
+    def __init__(self, data_dir,normlizetype):
         self.data_dir = data_dir
-        self.normalizetype = normalizetype
+        self.normlizetype = normlizetype
 
     def data_preprare(self, test=False):
         list_data = get_files(self.data_dir, test)
@@ -119,8 +119,8 @@ class SEU(object):
         else:
             data_pd = pd.DataFrame({"data": list_data[0], "label": list_data[1]})
             train_pd, val_pd = train_test_split_order(data_pd, test_size=0.2, num_classes= 20)
-            train_dataset = dataset(list_data=train_pd, transform=data_transforms('train',self.normalizetype))
-            val_dataset = dataset(list_data=val_pd, transform=data_transforms('val',self.normalizetype))
+            train_dataset = dataset(list_data=train_pd, transform=data_transforms('train',self.normlizetype))
+            val_dataset = dataset(list_data=val_pd, transform=data_transforms('val',self.normlizetype))
             return train_dataset, val_dataset
 
 

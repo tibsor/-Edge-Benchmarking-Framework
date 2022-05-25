@@ -21,12 +21,12 @@ import psutil
 csv_header=None
 vol_path='/inference/volume_data'
 mem_profiler_path=os.path.join(vol_path,'memory_profiler.log')
-
+global now
 # Getting % usage of virtual_memory
 # print('System RAM % used:', psutil.virtual_memory()[2])
 mem_log_file=open(mem_profiler_path,'a+')
 
-
+global run_type
 
 
 @profile(stream=mem_log_file)
@@ -43,9 +43,9 @@ def parse_args():
                         help='R_A: random split with data augmentation, R_NA: random split without data augmentation, O_A: order split with data augmentation')
     parser.add_argument('--checkpoint_dir', type=str, default='./checkpoint', help='the directory to save the model')
     args = parser.parse_args()
+    run_type = parser.description
     global csv_model_values
-    csv_model_values=[args.model_name, args.data_name, args.normalizetype, args.processing_type]
-
+    csv_model_values=[now, args.model_name, args.data_name, args.normalizetype, args.processing_type]
     end = time.time()
     print("parse_args() function takes", end-start, "seconds")
     time_dict['parse_args()']=end-start
@@ -184,25 +184,34 @@ def create_folder(model_name: str = None, dataset: str = None):
         pass
     else:
         os.mkdir(model_folder)
+
     dataset_folder = os.path.join(model_folder, dataset)
     isdir = os.path.isdir(dataset_folder)
     if isdir:
         pass
     else:
-        os.mkdir(dataset_folder)    
-    csv_model_header=["model", "dataset", "normalizetype", "processing_type"]
-    mem_rt_path=os.path.join(vol_path, dataset_folder, 'memory_runtime_values.csv')
-    cpu_quota_path=os.path.join(vol_path, dataset_folder, 'cpu_quota_runtime_values.csv')
+        os.mkdir(dataset_folder)
+
+    model_details_path = os.path.join(dataset_folder, "inference_run_details.csv")
+    if not(os.path.exists(model_details_path)):
+        csv_model_header=["timedate", "model_type", "dataset", "normalizetype", "processing_type"]
+        with open(model_details_path,'a+', encoding='UTF8', newline="") as f:
+            writer=csv.writer(f)
+            writer.writerow(csv_model_header)
+            writer.writerow(csv_model_values)
+    else:
+        with open(model_details_path, "a+", encoding='UTF8', newline="") as f:
+            writer=csv.writer(f)
+            writer.writerow(csv_model_values)
+    mem_rt_path=os.path.join(vol_path, dataset_folder, 'inference_memory_runtime_values.csv')
+    cpu_quota_path=os.path.join(vol_path, dataset_folder, 'inference_cpu_quota_runtime_values.csv')
     if "MEM_LIMIT" in os.environ:
-        
         memory_limit = int(os.environ["MEM_LIMIT"])
         memory_reserve=memory_limit/2.0
         csv_header=["timedate", "memory_limit","parse_args()", "create_folder()","inference.init()", "inference.setup()", "inference.evaluate()"]
         if not(os.path.exists(mem_rt_path)):
             with open(mem_rt_path,'a+', encoding='UTF8', newline="") as f:
                 writer=csv.writer(f)
-                writer.writerow(csv_model_header)
-                writer.writerow(csv_model_values)
                 writer.writerow(csv_header)
     else: 
         memory_limit=None
@@ -215,8 +224,8 @@ def create_folder(model_name: str = None, dataset: str = None):
         if not(os.path.exists(cpu_quota_path)):
             with open(cpu_quota_path,'a+', encoding='UTF8', newline="") as f:
                 writer=csv.writer(f)
-                writer.writerow(csv_model_header)
-                writer.writerow(csv_model_values)
+                # writer.writerow(csv_model_header)
+                # writer.writerow(csv_model_values)
                 writer.writerow(csv_header)
     else: cpu_quota=None
     end = time.time()
@@ -227,6 +236,8 @@ def create_folder(model_name: str = None, dataset: str = None):
 
 
 if __name__ == '__main__':
+    
+    now = datetime.now()
     args = parse_args()
     create_folder(model_name=args.model_name, dataset=args.data_name)
     values_list=[]
@@ -237,7 +248,7 @@ if __name__ == '__main__':
         mem_log_file.close()
         print(time_dict,"\n")
         if csv_header != None:
-            values_list.append(datetime.now())
+            values_list.append(now)
         else: raise ValueError("CSV HEADER IS NONE!")
         if memory_limit!=None:
             values_list.append(memory_limit)

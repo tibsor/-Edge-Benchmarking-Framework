@@ -15,10 +15,25 @@ WORKDIR /inference/
 # get env packages & install them
 COPY ./src/conda_env.txt /inference/requirements.txt 
 RUN pip install -r requirements.txt
+COPY ./Mechanical-datasets/ /inference/Mechanical-datasets/
 
 # to avoid caching problems for code while building, we will force remove anything left in the inference folder before copying the source code
-RUN rm -rf /inference/
+#RUN rm -rf /inference/
 COPY  ./src/ /inference/
+
+# RUN usermod -a -G docker benchmark_user
+# USER benchmark_user
+# # Create a user group 
+# RUN addgroup -S benchmark
+
+# # Create a user 'appuser' under 'xyzgroup'
+# RUN adduser -rm -d /inference -s /bin/bash -g benchmark_group -G sudo -u 1001 inference_user
+
+# # Chown all the files to the app user.
+# RUN chown -R inference_user:benchmark_group /inference
+
+# # Switch to 'appuser'
+# USER inference_user
 
 # debugger
 
@@ -28,8 +43,8 @@ COPY  ./src/ /inference/
 # CMD python3 -m ptvsd --host 0.0.0.0 --port 5678 --wait --multiprocess main.py
 # #ENTRYPOINT ["python3", "-m", "ptvsd", "--listen", "0.0.0.0:5678", "--wait-for-client", "-m"]
 
-# primary
-FROM base as primary
+# # primary
+# FROM base as primary
 
-CMD [ "python3", "main.py" ]
+# CMD [ "python3", "main.py" ]
 #RUN python3 main.py

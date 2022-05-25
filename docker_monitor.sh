@@ -1,7 +1,8 @@
 #!/bin/bash
 
 #TODO: add intrerupt flag for monitor
-INTERVAL=1 # interval (in seconds for logging information)
+INTERVAL=5 # interval (in seconds for logging information)
+#TODO: add user input for monitor time (with 1 sec default)
 OUTNAME=inference_benchmark.txt # log file  name
 
 # function for logging container stats

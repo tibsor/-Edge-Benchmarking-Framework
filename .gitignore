@@ -2,3 +2,13 @@
 .vscode
 .devcontainer
 local_env
+host_data
+main_fw.py
+*.csv
+cpu_limit.sh
+cpu_test.sh
+cpu*.py
+inference_scripts/plot.py
+src/AE_Datasets/*
+src/CNN_Datasets/
+! src/CNN_Datasets/O_A/datasets/SEU.py
