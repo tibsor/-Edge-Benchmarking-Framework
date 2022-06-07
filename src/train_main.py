@@ -127,7 +127,11 @@ if __name__ == '__main__':
     # Prepare the saving path for the model
 
     save_dir = create_folder(model_name=args.model_name, dataset=args.data_name)
-
+    # set the logger
+    if memory_limit:
+        setlogger(os.path.join(save_dir,"RAM_training.log"))
+    if cpu_quota:
+        setlogger(os.path.join(save_dir, 'CPU_training.log'))
     # save the args
     for k, v in args.__dict__.items():
         logging.info("{}: {}".format(k, v))

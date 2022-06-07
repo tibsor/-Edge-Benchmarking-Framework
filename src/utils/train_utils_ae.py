@@ -71,14 +71,19 @@ class train_utils(object):
 
 
         self.datasets = {}
+        if os.path.exists('/inference/volume_data/Sae1d/SEU/SEU_dataset.pt'):
+            self.dataloaders = torch.load('/inference/volume_data/Sae1d/SEU/SEU_dataset.pt') # mmap mode helps keep dataset off RAM
+            self.datasets['train'], self.datasets['val'] = self.dataloaders['train'], self.dataloaders['val']
+        else:
+            self.datasets['train'], self.datasets['val'] = Dataset(args.data_dir,args.normalizetype).data_preprare()
 
-        self.datasets['train'], self.datasets['val'] = Dataset(args.data_dir, args.normalizetype).data_preprare()
-
-        self.dataloaders = {x: torch.utils.data.DataLoader(self.datasets[x], batch_size=args.batch_size,
+            self.dataloaders = {x: torch.utils.data.DataLoader(self.datasets[x], batch_size=args.batch_size,
                                                            shuffle=(True if x == 'train' else False),
                                                            num_workers=args.num_workers,
-                                                           pin_memory=(True if self.device == 'cuda' else False))
-                            for x in ['train', 'val']}
+                                                           pin_memory=(True if self.device == 'cuda' else False)) for x in ['train', 'val']}
+
+            torch.save(self.dataloaders,'/inference/volume_data/Sae1d/SEU/SEU_dataset.pt')
+
         # Define the model
         fmodel=getattr(models, args.model_name)
         self.encoder = getattr(fmodel, 'encoder')(in_channel=Dataset.inputchannel, out_channel=Dataset.num_classes)

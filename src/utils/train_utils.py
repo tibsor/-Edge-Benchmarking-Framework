@@ -9,6 +9,7 @@ import torch
 from torch import nn
 from torch import optim
 import models
+import numpy as np
 
 class train_utils(object):
     def __init__(self, args, save_dir):
@@ -51,14 +52,21 @@ class train_utils(object):
         print(Dataset)
 
         self.datasets = {}
+        if os.path.exists('/inference/volume_data/MLP/SEU/SEU_dataset.pt'):
+            self.dataloaders = torch.load('/inference/volume_data/MLP/SEU/SEU_dataset.pt') # mmap mode helps keep dataset off RAM
+            self.datasets['train'], self.datasets['val'] = self.dataloaders['train'], self.dataloaders['val']
 
-        self.datasets['train'], self.datasets['val'] = Dataset(args.data_dir,args.normalizetype).data_preprare()
+        else:
+            self.datasets['train'], self.datasets['val'] = Dataset(args.data_dir,args.normalizetype).data_preprare()
 
-        self.dataloaders = {x: torch.utils.data.DataLoader(self.datasets[x], batch_size=args.batch_size,
+            self.dataloaders = {x: torch.utils.data.DataLoader(self.datasets[x], batch_size=args.batch_size,
                                                            shuffle=(True if x == 'train' else False),
                                                            num_workers=args.num_workers,
-                                                           pin_memory=(True if self.device == 'cuda' else False))
-                            for x in ['train', 'val']}
+                                                           pin_memory=(True if self.device == 'cuda' else False)) for x in ['train', 'val']}
+
+            torch.save(self.dataloaders,'/inference/volume_data/MLP/SEU/SEU_dataset.pt')
+#        np.save('SEU_dataset.pt', self.dataloaders, allow_pickle=False)
+       
         # Define the model
         self.model = getattr(models, args.model_name)(in_channel=Dataset.inputchannel, out_channel=Dataset.num_classes)
         if self.device_count > 1:
