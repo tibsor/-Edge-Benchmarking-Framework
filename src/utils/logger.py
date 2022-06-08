@@ -6,7 +6,7 @@ import logging
 def setlogger(path):
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
-    logFormatter = logging.Formatter("%(asctime)s %(message)s", "%m-%d %H:%M:%S")
+    logFormatter = logging.Formatter("%(asctime)s.%(msecs)05d %(message)s", datefmt='%Y-%m-%d,%H:%M:%S')
 
     fileHandler = logging.FileHandler(path)
     fileHandler.setFormatter(logFormatter)

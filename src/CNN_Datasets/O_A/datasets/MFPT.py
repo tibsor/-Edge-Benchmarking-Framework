@@ -19,21 +19,22 @@ def get_files(root, test=False):
     root:The location of the data set
     '''
     m = os.listdir(root)
-    datasetname = os.listdir(os.path.join("/tmp", root, m[0]))  # '1 - Three Baseline Conditions'
+    #datasetname = os.listdir(os.path.join("/tmp", root))  # '1 - Three Baseline Conditions'
     # '2 - Three Outer Race Fault Conditions'
     # '3 - Seven More Outer Race Fault Conditions'
     # '4 - Seven Inner Race Fault Conditions'
     # '5 - Analyses',
     # '6 - Real World Examples
     # Generate a list of data
-    dataset1 = os.listdir(os.path.join("/tmp", root, m[0], datasetname[0]))  # 'Three Baseline Conditions'
-    dataset2 = os.listdir(os.path.join("/tmp", root, m[0], datasetname[2]))  # 'Seven More Outer Race Fault Conditions'
-    dataset3 = os.listdir(os.path.join("/tmp", root, m[0], datasetname[3]))  # 'Seven Inner Race Fault Conditions'
 
-    data_root1 = os.path.join('/tmp',root,m[0],datasetname[0])  #Path of Three Baseline Conditions
-    data_root2 = os.path.join('/tmp',root,m[0],datasetname[2])  #Path of Seven More Outer Race Fault Conditions
-    data_root3 = os.path.join('/tmp',root,m[0],datasetname[3])  #Path of Seven Inner Race Fault Conditions
+    data_root1 = os.path.join('/tmp',root,m[4])  #Path of Three Baseline Conditions
+    data_root2 = os.path.join('/tmp',root,m[7])  #Path of Seven More Outer Race Fault Conditions
+    data_root3 = os.path.join('/tmp',root,m[3])  #Path of Seven Inner Race Fault Conditions
     
+    dataset1 = os.listdir(os.path.join("/tmp", root, m[4]))  # 'Three Baseline Conditions'
+    dataset2 = os.listdir(os.path.join("/tmp", root, m[7]))  # 'Seven More Outer Race Fault Conditions'
+    dataset3 = [ f for f in os.listdir(data_root3) if f.endswith(".mat") ]  # 'Seven Inner Race Fault Conditions'
+
     path1=os.path.join('/tmp',data_root1,dataset1[0])
     data, lab = data_load(path1,label=0)  #The label for normal data is 0
 

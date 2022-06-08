@@ -16,7 +16,7 @@ WORKDIR /inference/
 COPY ./src/conda_env.txt /inference/requirements.txt 
 RUN pip install -r requirements.txt
 COPY ./Mechanical-datasets/ /inference/Mechanical-datasets/
-
+COPY ./MFPT_Fault_Data_Sets/ /inference/MFPT_Fault_Data_Sets/
 # to avoid caching problems for code while building, we will force remove anything left in the inference folder before copying the source code
 #RUN rm -rf /inference/
 COPY  ./src/ /inference/

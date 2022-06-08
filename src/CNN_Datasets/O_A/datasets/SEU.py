@@ -16,6 +16,7 @@ label1 = [i for i in range(0,10)]
 Gdata = ["Chipped_20_0.csv","Health_20_0.csv","Miss_20_0.csv","Root_20_0.csv","Surface_20_0.csv","Chipped_30_2.csv","Health_30_2.csv","Miss_30_2.csv","Root_30_2.csv","Surface_30_2.csv"]
 labe12 = [i for i in range(10,20)]
 
+SEU_path='/inference/Mechanical-datasets'
 
 #generate Training Dataset and Testing Dataset
 def get_files(root, test=False):
@@ -24,10 +25,12 @@ def get_files(root, test=False):
     root:The location of the data set
     datasetname:List of  dataset
     '''
-    datasetname = os.listdir(os.path.join(root, os.listdir(root)[0]))  # 0:bearingset, 2:gearset
-    root1 = os.path.join("/tmp",root,os.listdir(root)[0],datasetname[1]) #Path of bearingset
-    root2 = os.path.join("/tmp",root,os.listdir(root)[0],datasetname[2]) #Path of gearset
+    gearbox_folder = f'{SEU_path}/gearbox'
+    datasetname = os.listdir(os.path.join(root, os.listdir(root)[1]))  # 2:bearingset, 1:gearset
 
+    root1 = os.path.join(gearbox_folder,"bearingset")
+    root2 = os.path.join(gearbox_folder,"gearset")
+    
     data = []
     lab =[]
     for i in tqdm(range(len(Bdata))):

@@ -16,6 +16,7 @@ label1 = [i for i in range(0,10)]
 Gdata = ["Chipped_20_0.csv","Health_20_0.csv","Miss_20_0.csv","Root_20_0.csv","Surface_20_0.csv","Chipped_30_2.csv","Health_30_2.csv","Miss_30_2.csv","Root_30_2.csv","Surface_30_2.csv"]
 labe12 = [i for i in range(10,20)]
 
+SEU_path='/inference/Mechanical-datasets'
 
 #generate Training Dataset and Testing Dataset
 def get_files(root, test=False):
@@ -24,10 +25,12 @@ def get_files(root, test=False):
     root:The location of the data set
     datasetname:List of  dataset
     '''
-    datasetname = os.listdir(os.path.join(root, os.listdir(root)[0]))  # 0:bearingset, 2:gearset
-    root1 = os.path.join("/tmp",root,os.listdir(root)[0],datasetname[1]) #Path of bearingset
-    root2 = os.path.join("/tmp",root,os.listdir(root)[0],datasetname[2]) #Path of gearset
+    gearbox_folder = f'{SEU_path}/gearbox'
+    datasetname = os.listdir(os.path.join(root, os.listdir(root)[1]))  # 2:bearingset, 1:gearset
 
+    root1 = os.path.join(gearbox_folder,"bearingset")
+    root2 = os.path.join(gearbox_folder,"gearset")
+    
     data = []
     lab =[]
     for i in tqdm(range(len(Bdata))):
@@ -107,9 +110,9 @@ class SEU(object):
     num_classes = 20
     inputchannel = 1
 
-    def __init__(self, data_dir,normlizetype):
+    def __init__(self, data_dir,normalizetype):
         self.data_dir = data_dir
-        self.normlizetype = normlizetype
+        self.normalizetype = normalizetype
 
     def data_preprare(self, test=False):
         list_data = get_files(self.data_dir, test)
@@ -119,8 +122,8 @@ class SEU(object):
         else:
             data_pd = pd.DataFrame({"data": list_data[0], "label": list_data[1]})
             train_pd, val_pd = train_test_split_order(data_pd, test_size=0.2, num_classes= 20)
-            train_dataset = dataset(list_data=train_pd, transform=data_transforms('train',self.normlizetype))
-            val_dataset = dataset(list_data=val_pd, transform=data_transforms('val',self.normlizetype))
+            train_dataset = dataset(list_data=train_pd, transform=data_transforms('train',self.normalizetype))
+            val_dataset = dataset(list_data=val_pd, transform=data_transforms('val',self.normalizetype))
             return train_dataset, val_dataset
 
 

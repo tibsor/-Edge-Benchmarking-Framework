@@ -9,6 +9,7 @@ cpu_limit.sh
 cpu_test.sh
 cpu*.py
 inference_scripts/plot.py
-src/AE_Datasets/*
-src/CNN_Datasets/
-! src/CNN_Datasets/O_A/datasets/SEU.py
+tmp
+MFPT_Fault_Data_Sets
+*.pyc 
+*_init_*

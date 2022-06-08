@@ -8,7 +8,6 @@ from datetime import datetime
 import time
 from utils.logger import setlogger
 import logging
-from utils.train_utils import train_utils
 
 args = None
 time_dict={"parse_args()": None, "create_folder()": None,"train.init()": None, "train.setup()": None, "train.evaluate()": None}
@@ -42,7 +41,11 @@ def parse_args():
     parser.add_argument('--lr_scheduler', type=str, choices=['step', 'exp', 'stepLR', 'fix'], default='fix', help='the learning rate schedule')
     parser.add_argument('--gamma', type=float, default=0.1, help='learning rate scheduler parameter for step and exp')
     parser.add_argument('--steps', type=str, default='9', help='the learning rate decay for step and stepLR')
+    parser.add_argument('--steps1', type=str, default='50,80',
+                        help='the learning rate decay for step and stepLR')
 
+    # save, load and display information
+    parser.add_argument('--middle_epoch', type=int, default=50, help='middle number of epoch')
 
     # save, load and display information
     parser.add_argument('--max_epoch', type=int, default=100, help='max number of epoch')
@@ -57,25 +60,25 @@ def parse_args():
     time_list.append(end-start)
     return args
 
+def folder_check(folder_path: str = None):
+    isdir = os.path.isdir(folder_path)
+    if isdir:
+        pass
+    else:
+        os.mkdir(folder_path)
+    
 
 def create_folder(model_name: str = None, dataset: str = None):
     start = time.time()
     global memory_limit, cpu_quota, cpu_quota_path, mem_rt_path, csv_header 
-    model_folder = os.path.join(vol_path, model_name)
-    isdir = os.path.isdir(model_folder)
-    if isdir:
-        pass
-    else:
-        os.mkdir(model_folder)
-    dataset_folder = os.path.join(model_folder, dataset)
-    isdir = os.path.isdir(dataset_folder)
-    if isdir:
-        pass
-    else:
-        os.mkdir(dataset_folder)    
+    folder_check(vol_path)
+    dataset_folder = os.path.join(vol_path, dataset)
+    folder_check(dataset_folder)    
+    model_folder = os.path.join(dataset_folder, model_name)
+    folder_check(model_folder)
     #csv_model_header=["model", "dataset", "normalizetype", "processing_type", "batch_type", "optimizer", "learning_rate", "steps", "max_epoch"]
     
-    model_details_path = os.path.join(dataset_folder, "train_run_details.csv")
+    model_details_path = os.path.join(model_folder, "train_run_details.csv")
     if not(os.path.exists(model_details_path)):
         csv_model_header=["timedate", "model", "dataset", "normalizetype", "processing_type", "batch_size", "optimizer", "learning_rate", "steps", "max_epoch"]
         with open(model_details_path,'a+', encoding='UTF8', newline="") as f:
@@ -87,8 +90,8 @@ def create_folder(model_name: str = None, dataset: str = None):
             writer=csv.writer(f)
             writer.writerow(csv_model_values)
     
-    mem_rt_path=os.path.join(vol_path, dataset_folder, 'train_memory_runtime_values.csv')
-    cpu_quota_path=os.path.join(vol_path, dataset_folder, 'train_cpu_quota_runtime_values.csv')
+    mem_rt_path=os.path.join(model_folder, 'train_memory_runtime_values.csv')
+    cpu_quota_path=os.path.join(model_folder, 'train_cpu_quota_runtime_values.csv')
     if "MEM_LIMIT" in os.environ:
         
         memory_limit = int(os.environ["MEM_LIMIT"])
@@ -116,13 +119,33 @@ def create_folder(model_name: str = None, dataset: str = None):
     time_dict["create_folder()"]=end-start
     time_list.append(end-start)
     
-    return dataset_folder
-
+    return model_folder
 
 
 if __name__ == '__main__':
     now = datetime.now()
     args = parse_args()
+    CNN_datasets = []
+    CNN_datasets.append("MLP")
+    CNN_datasets.append("CNN_1d")
+    CNN_datasets.append("CNN_2d")
+    CNN_datasets.append("Resnet1d")
+    CNN_datasets.append("Alexnet1d")
+    CNN_datasets.append("BiLSTM1d")
+    CNN_datasets.append("LeNet1d")
+
+
+    AE_dataset_flag = True
+
+    for i in CNN_datasets:
+        if args.model_name == i:
+            from utils.train_utils import train_utils
+            AE_dataset_flag = False
+            break
+        # else:
+        #     from utils.train_utils_ae import train_utils
+    if AE_dataset_flag:
+        from utils.train_utils_ae import train_utils
     os.environ['CUDA_VISIBLE_DEVICES'] = args.cuda_device.strip()
     # Prepare the saving path for the model
 
