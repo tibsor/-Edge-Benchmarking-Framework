@@ -8,13 +8,14 @@ from datetime import datetime
 import time
 from utils.logger import setlogger
 import logging
+import shutil
 
 args = None
 time_dict={"parse_args()": None, "create_folder()": None,"train.init()": None, "train.setup()": None, "train.evaluate()": None}
 time_list=[]
 csv_header=None
-vol_path='/inference/volume_data'
-
+vol_path='/benchmark/volume_data'
+dataset_folder_name = {"SEU":"Mechanical-datasets", "MFPT":"MFPT_Fault_Data_Sets"}
 def parse_args():
     start = time.time()
 
@@ -23,7 +24,7 @@ def parse_args():
     # basic parameters
     parser.add_argument('--model_name', type=str, default='MLP', help='the name of the model')
     parser.add_argument('--data_name', type=str, default='SEU', help='the name of the data')
-    parser.add_argument('--data_dir', type=str, default= "/inference/Mechanical-datasets", help='the directory of the data')
+    parser.add_argument('--data_dir', type=str, default= "/benchmark/", help='the directory of the data')
     parser.add_argument('--normalizetype', type=str, choices=['0-1', '1-1', 'mean-std'], default='0-1', help='data normalization methods')
     parser.add_argument('--processing_type', type=str, choices=['R_A', 'R_NA', 'O_A'], default='O_A',
                         help='R_A: random split with data augmentation, R_NA: random split without data augmentation, O_A: order split with data augmentation')
@@ -51,6 +52,8 @@ def parse_args():
     parser.add_argument('--max_epoch', type=int, default=100, help='max number of epoch')
     parser.add_argument('--print_step', type=int, default=100, help='the interval of log training information')
     args = parser.parse_args()
+    if args.data_dir == '/benchmark/':
+        args.data_dir = os.path.join("/benchmark/", dataset_folder_name[args.data_name])
     global csv_model_values
     csv_model_values=[now, args.model_name, args.data_name, args.normalizetype, args.processing_type, args.batch_size, args.opt, args.lr, args.steps, args.max_epoch]
 
@@ -77,8 +80,10 @@ def create_folder(model_name: str = None, dataset: str = None):
     model_folder = os.path.join(dataset_folder, model_name)
     folder_check(model_folder)
     #csv_model_header=["model", "dataset", "normalizetype", "processing_type", "batch_type", "optimizer", "learning_rate", "steps", "max_epoch"]
-    
-    model_details_path = os.path.join(model_folder, "train_run_details.csv")
+    now = datetime.now()
+    date_folder = os.path.join(model_folder,f'{now.year}_{now.month}_{now.day}')
+    folder_check(date_folder)
+    model_details_path = os.path.join(date_folder, "train_run_details.csv")
     if not(os.path.exists(model_details_path)):
         csv_model_header=["timedate", "model", "dataset", "normalizetype", "processing_type", "batch_size", "optimizer", "learning_rate", "steps", "max_epoch"]
         with open(model_details_path,'a+', encoding='UTF8', newline="") as f:
@@ -90,8 +95,8 @@ def create_folder(model_name: str = None, dataset: str = None):
             writer=csv.writer(f)
             writer.writerow(csv_model_values)
     
-    mem_rt_path=os.path.join(model_folder, 'train_memory_runtime_values.csv')
-    cpu_quota_path=os.path.join(model_folder, 'train_cpu_quota_runtime_values.csv')
+    mem_rt_path=os.path.join(date_folder, 'train_memory_runtime_values.csv')
+    cpu_quota_path=os.path.join(date_folder, 'train_cpu_quota_runtime_values.csv')
     if "MEM_LIMIT" in os.environ:
         
         memory_limit = int(os.environ["MEM_LIMIT"])
@@ -151,10 +156,11 @@ if __name__ == '__main__':
 
     save_dir = create_folder(model_name=args.model_name, dataset=args.data_name)
     # set the logger
+    cwd = os.getcwd()
     if memory_limit:
-        setlogger(os.path.join(save_dir,"RAM_training.log"))
+        setlogger(os.path.join(cwd,"RAM_training.log"))
     if cpu_quota:
-        setlogger(os.path.join(save_dir, 'CPU_training.log'))
+        setlogger(os.path.join(cwd, 'CPU_training.log'))
     # save the args
     for k, v in args.__dict__.items():
         logging.info("{}: {}".format(k, v))
@@ -201,7 +207,11 @@ if __name__ == '__main__':
         with open(cpu_quota_path,'a+', encoding='UTF8', newline="") as f:
             writer=csv.writer(f, delimiter=',')
             writer.writerow(values_list)
-
+    #date_folder = os.path.join(model_folder,f'{now.year}_{now.month}_{now.day}')
+    if memory_limit:
+        shutil.copy(os.path.join(cwd,"RAM_training.log"),f'{vol_path}/{args.data_name}/{args.model_name}/{now.year}_{now.month}_{now.day}/{str(now)}_RAM_training.log')
+    if cpu_quota:
+        shutil.copy(os.path.join(cwd,"CPU_training.log"),f'{vol_path}/{args.data_name}/{args.model_name}/{now.year}_{now.month}_{now.day}/{str(now)}_CPU_training.log')
 
 
 

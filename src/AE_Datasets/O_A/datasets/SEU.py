@@ -16,7 +16,7 @@ label1 = [i for i in range(0,10)]
 Gdata = ["Chipped_20_0.csv","Health_20_0.csv","Miss_20_0.csv","Root_20_0.csv","Surface_20_0.csv","Chipped_30_2.csv","Health_30_2.csv","Miss_30_2.csv","Root_30_2.csv","Surface_30_2.csv"]
 labe12 = [i for i in range(10,20)]
 
-SEU_path='/inference/Mechanical-datasets'
+SEU_path='/benchmark/Mechanical-datasets'
 
 #generate Training Dataset and Testing Dataset
 def get_files(root, test=False):

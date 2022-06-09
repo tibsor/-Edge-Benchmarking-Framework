@@ -51,8 +51,8 @@ class train_utils(object):
         print(Dataset)
 
         self.datasets = {}
-        if os.path.exists(f'/inference/volume_data/{args.data_name}/{args.data_name}_dataset.h5'):
-            self.dataloaders = torch.load(f'/inference/volume_data/{args.data_name}/{args.data_name}_dataset.h5') # mmap mode helps keep dataset off RAM
+        if os.path.exists(f'/benchmark/volume_data/{args.data_name}/{args.data_name}_dataset.h5'):
+            self.dataloaders = torch.load(f'/benchmark/volume_data/{args.data_name}/{args.data_name}_dataset.h5') # mmap mode helps keep dataset off RAM
             self.datasets['train'], self.datasets['val'] = self.dataloaders['train'], self.dataloaders['val']
 
         else:
@@ -63,8 +63,8 @@ class train_utils(object):
                                                            num_workers=args.num_workers,
                                                            pin_memory=(True if self.device == 'cuda' else False)) for x in ['train', 'val']}
 
-            torch.save(self.dataloaders,f'/inference/volume_data/{args.data_name}/{args.data_name}_dataset.h5')
-       
+            torch.save(self.dataloaders,f'/benchmark/volume_data/{args.data_name}/{args.data_name}_dataset.h5')
+        self.model = getattr(models, args.model_name)
         # Define the model
         if args.model_name == 'CNN_1d':
             self.model = self.model.CNN(in_channel=Dataset.inputchannel, out_channel=Dataset.num_classes)
@@ -222,8 +222,8 @@ class train_utils(object):
 
             if self.lr_scheduler is not None:
                 self.lr_scheduler.step()
-        logging.info("saving best model epoch {}, acc {:.4f}".format(tmp_epoch, best_acc))
-        torch.save(tmp_state_dict, os.path.join(self.save_dir, '{}-{:.4f}-best_model.pth'.format(tmp_epoch, best_acc)))
+        # logging.info("saving best model epoch {}, acc {:.4f}".format(tmp_epoch, best_acc))
+        # torch.save(tmp_state_dict, os.path.join(self.save_dir, '{}-{:.4f}-best_model.pth'.format(tmp_epoch, best_acc)))
                         
 
 

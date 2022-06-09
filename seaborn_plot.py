@@ -16,17 +16,21 @@ def init():
     train_memory_file_name = "train_memory_runtime_values.csv"
     inference_cpu_file_name = "inference_cpu_quota_runtime_values.csv"
     inference_memory_file_name = "inference_memory_runtime_values.csv"
+    train_RAM_log_name = 'RAM_training.log'
+    train_CPU_log_name = 'CPU_training.log' 
     global model_dict
-    model_folders = f'{cwd}/host_data'
-    model_name = questionary.select("Choose model folder:", choices=os.listdir(model_folders)).ask()
-    model_dict = {"model": None,"dataset": None, "normalizetype": None,"processing_type": None}
-    dataset_folders = os.path.join(model_folders,model_name)
+    dataset_folders = f'{cwd}/host_data'
     dataset_name = questionary.select("Choose dataset:",choices=os.listdir(dataset_folders)).ask()
-    working_dir = os.path.join(dataset_folders,dataset_name)
+    model_dict = {"model": None,"dataset": None, "normalizetype": None,"processing_type": None}
+    model_folders = os.path.join(dataset_folders,dataset_name)
+    model_name = questionary.select("Choose model folder:", choices=os.listdir(model_folders)).ask()
+    working_dir = os.path.join(model_folders,model_name)
     plot_selection = questionary.select("Train or inference:", choices=["train", "inference"]).ask()
+    RAM_log_path = os.path.join (working_dir,train_RAM_log_name)
+    CPU_log_path = os.path.join(working_dir, train_CPU_log_name)
     if plot_selection == "train":
         cpu_values_file = os.path.join(working_dir, train_cpu_file_name)
-        memory_values_file = os.path.join(working_dir, train_memory_file_name)
+        memory_values_file = os.path.join(working_dir, train_memory_file_name)    
     else:
         cpu_values_file = os.path.join(working_dir, inference_cpu_file_name)
         memory_values_file = os.path.join(working_dir, inference_memory_file_name)
@@ -53,44 +57,6 @@ def init():
         return None,memory_values_list, model_name, dataset_name
     else: return None,None, model_name, dataset_name
 
-
-def CPU_function_time_plots(x_axis: list = None, x1_axis: list = None, y_axis: list = None, model_name: str = None, dataset_name: str = None):
-    args_time_list=[]
-    init_time_list=[]
-    setup_time_list=[]
-    eval_time_list=[]
-    create_folder_list=[]
-    for index,i in enumerate(x_axis):
-        if index%5==0:
-            args_time_list.append(i)
-        elif index%5==1:
-            create_folder_list.append(i)
-        elif index%5==2:
-            init_time_list.append(i)
-        elif index%5==3:
-            setup_time_list.append(i)
-        elif index%5==4:
-            eval_time_list.append(i)
-    fig, axs = plt.subplots(3, 2)
-    fig.suptitle(f'Model:{model_name}\nDataset:{dataset_name}\nFunction time vs CPU Quota')
-
-    axs[0, 0].plot(args_time_list, y_axis, marker='v', linestyle='')
-    axs[0, 0].set_title('parse_args()')
-    axs[0, 1].plot(create_folder_list, y_axis, 'tab:orange', marker='.', linestyle='')
-    axs[0, 1].set_title('create_folder()')
-    axs[1, 0].plot(init_time_list, y_axis, 'tab:green',marker='o', linestyle='')
-    axs[1, 0].set_title('inference.init()')
-    axs[1, 1].plot(setup_time_list, y_axis, 'tab:red', marker='^', linestyle='')
-    axs[1, 1].set_title('inference.setup()')
-    axs[2, 0].plot(eval_time_list, y_axis, marker='o', linestyle='')
-    axs[2, 0].set_title('inference.eval()')
-    axs[2, 1].plot(x1_axis, y_axis, marker='o', linestyle='')
-    axs[2, 1].set_title('Total Time')
-    fig.tight_layout()
-    for ax in axs.flat:
-        ax.set(xlabel='Time (s)', ylabel='CPU Quota')
-    #plt.savefig("fct_rt.png")
-    plt.show(block=False)
 
 def folder_check(folder_path: str = None):
     isdir = os.path.isdir(folder_path)
