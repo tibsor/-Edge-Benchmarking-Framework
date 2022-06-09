@@ -25,7 +25,7 @@ function CPU_benchmark {
         echo "Dataset/Model:$2/$1"
         echo "Starting inference container with CPU quota $cpu_quota"
 
-        docker run --rm -it -e CPU_QUOTA="$cpu_quota" --memory="2048m" --cpu-period="100000" --cpu-quota="$cpu_quota" -v $CURRENT_DIR/host_data:/benchmark/volume_data bench_fw:latest python3 train_main.py --model_name $1 --data_name $2 --normalizetype mean-std --processing_type O_A --max_epoch 20
+        docker run --rm -it -e CPU_QUOTA="$cpu_quota" --memory="2048m" --cpu-period="100000" --cpu-quota="$cpu_quota" -v $CURRENT_DIR/host_data:/benchmark/volume_data bench_fw:latest python3 train_main.py --model_name $1 --data_name $2 --normalizetype mean-std --processing_type O_A --max_epoch 10
     done
     done
 }

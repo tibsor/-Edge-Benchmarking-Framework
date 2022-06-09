@@ -29,7 +29,7 @@ function RAM_benchmark {
         #docker run -it --memory="${mem_limit}m" --memory-reservation="${mem_reserve}m" --memory-swap=256m inf_bench:latest python3 main.py  --model_name MLP --data_name SEU --data_dir /inference/Mechanical-datasets --normlizetype mean-std --processing_type O_A --checkpoint_dir /inference/checkpoint
         for i in {0..4..1}
             do 
-            docker run --rm -it -e MEM_LIMIT="$mem_limit" --memory="${mem_limit}m" --cpus="1.0" -v $CURRENT_DIR/host_data:/benchmark/volume_data bench_fw:latest python3 train_main.py --model_name $1 --data_name $2 --normalizetype mean-std --processing_type O_A --max_epoch 20
+            docker run --rm -it -e MEM_LIMIT="$mem_limit" --memory="${mem_limit}m" --cpus="1.0" -v $CURRENT_DIR/host_data:/benchmark/volume_data bench_fw:latest python3 train_main.py --model_name $1 --data_name $2 --normalizetype mean-std --processing_type O_A --max_epoch 10
             run_output=$?
             echo "Run finished! Clean-up..."
             if [ $run_output -eq 0 ]; then 
