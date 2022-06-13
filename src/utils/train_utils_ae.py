@@ -71,8 +71,8 @@ class train_utils(object):
 
 
         self.datasets = {}
-        if os.path.exists(f'/inference/volume_data/{args.data_name}/{args.data_name}_dataset.h5'):
-            self.dataloaders = torch.load(f'/inference/volume_data/{args.data_name}/{args.data_name}_dataset.h5') # mmap mode helps keep dataset off RAM
+        if os.path.exists(f'/benchmark/volume_data/{args.data_name}/{args.data_name}_dataset.h5'):
+            self.dataloaders = torch.load(f'/benchmark/volume_data/{args.data_name}/{args.data_name}_dataset.h5') # mmap mode helps keep dataset off RAM
             self.datasets['train'], self.datasets['val'] = self.dataloaders['train'], self.dataloaders['val']
 
         else:
@@ -83,7 +83,7 @@ class train_utils(object):
                                                            num_workers=args.num_workers,
                                                            pin_memory=(True if self.device == 'cuda' else False)) for x in ['train', 'val']}
 
-            torch.save(self.dataloaders,f'/inference/volume_data/{args.data_name}/{args.data_name}_dataset.h5')
+            torch.save(self.dataloaders,f'/benchmark/volume_data/{args.data_name}/{args.data_name}_dataset.h5')
         # Define the model
         fmodel=getattr(models, args.model_name)
         self.encoder = getattr(fmodel, 'encoder')(in_channel=Dataset.inputchannel, out_channel=Dataset.num_classes)
@@ -357,19 +357,20 @@ class train_utils(object):
                     # save the checkpoint for other learning
                     model_state_dic = self.classifier.module.state_dict() if self.device_count > 1 else self.classifier.state_dict()
                     # save the best model according to the val accuracy
-                    if epoch_acc > best_acc or epoch1 > args.max_epoch-2:
+                    if epoch_acc > best_acc:
                         best_acc = epoch_acc
-                        logging.info("save best model epoch {}, acc {:.4f}".format(epoch1, epoch_acc))
-                        torch.save(model_state_dic,
-                                   os.path.join(self.save_dir, '{}-{:.4f}-best_model.pth'.format(epoch1, best_acc)))
+                        tmp_epoch = epoch
+                        logging.info("best model epoch {}, acc {:.4f}".format(epoch, epoch_acc))
+                        tmp_state_dict = model_state_dic                        
+                        # torch.save(model_state_dic,
+                                #    os.path.join(self.save_dir, '{}-{:.4f}-best_model.pth'.format(epoch1, best_acc)))
 
 
             if self.lr_scheduler1 is not None:
                 self.lr_scheduler1.step()
-
-
-
-
+        # logging.info("saving best model epoch {}, acc {:.4f}".format(tmp_epoch, best_acc))
+        # torch.save(tmp_state_dict, os.path.join(self.save_dir, '{}-{:.4f}-best_model.pth'.format(tmp_epoch, best_acc)))
+                        
 
 
 

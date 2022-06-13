@@ -46,10 +46,10 @@ def parse_args():
                         help='the learning rate decay for step and stepLR')
 
     # save, load and display information
-    parser.add_argument('--middle_epoch', type=int, default=50, help='middle number of epoch')
+    parser.add_argument('--middle_epoch', type=int, default=10, help='middle number of epoch')
 
     # save, load and display information
-    parser.add_argument('--max_epoch', type=int, default=100, help='max number of epoch')
+    parser.add_argument('--max_epoch', type=int, default=10, help='max number of epoch')
     parser.add_argument('--print_step', type=int, default=100, help='the interval of log training information')
     args = parser.parse_args()
     if args.data_dir == '/benchmark/':
@@ -83,7 +83,7 @@ def create_folder(model_name: str = None, dataset: str = None):
     now = datetime.now()
     date_folder = os.path.join(model_folder,f'{now.year}_{now.month}_{now.day}')
     folder_check(date_folder)
-    model_details_path = os.path.join(date_folder, "train_run_details.csv")
+    model_details_path = os.path.join(model_folder, "train_run_details.csv")
     if not(os.path.exists(model_details_path)):
         csv_model_header=["timedate", "model", "dataset", "normalizetype", "processing_type", "batch_size", "optimizer", "learning_rate", "steps", "max_epoch"]
         with open(model_details_path,'a+', encoding='UTF8', newline="") as f:
@@ -95,10 +95,11 @@ def create_folder(model_name: str = None, dataset: str = None):
             writer=csv.writer(f)
             writer.writerow(csv_model_values)
     
-    mem_rt_path=os.path.join(date_folder, 'train_memory_runtime_values.csv')
-    cpu_quota_path=os.path.join(date_folder, 'train_cpu_quota_runtime_values.csv')
+    mem_rt_path=os.path.join(model_folder, 'train_memory_runtime_values.csv')
+    cpu_quota_path=os.path.join(model_folder, 'train_cpu_quota_runtime_values.csv')
     if "MEM_LIMIT" in os.environ:
-        
+        RAM_log_folder = os.path.join(date_folder,"RAM_log")
+        folder_check(RAM_log_folder)
         memory_limit = int(os.environ["MEM_LIMIT"])
         memory_reserve=memory_limit/2.0
         csv_header=["timedate", "memory_limit","parse_args()", "create_folder()","train.init()", "train.setup()", "train.evaluate()"]
@@ -111,6 +112,8 @@ def create_folder(model_name: str = None, dataset: str = None):
         memory_reserve=None
 
     if "CPU_QUOTA" in os.environ:
+        CPU_log_folder = os.path.join(date_folder,"CPU_log")
+        folder_check(CPU_log_folder)
         cpu_quota=int(os.environ["CPU_QUOTA"])
         cpu_period=100000
         csv_header=["timedate", "cpu_quota", "parse_args()", "create_folder()","train.init()", "train.setup()", "train.evaluate()"]
@@ -209,9 +212,9 @@ if __name__ == '__main__':
             writer.writerow(values_list)
     #date_folder = os.path.join(model_folder,f'{now.year}_{now.month}_{now.day}')
     if memory_limit:
-        shutil.copy(os.path.join(cwd,"RAM_training.log"),f'{vol_path}/{args.data_name}/{args.model_name}/{now.year}_{now.month}_{now.day}/{str(now)}_RAM_training.log')
+        shutil.copy(os.path.join(cwd,"RAM_training.log"),f'{vol_path}/{args.data_name}/{args.model_name}/{now.year}_{now.month}_{now.day}/RAM_log/{now.hour}_{now.minute}_RAM_training.log')
     if cpu_quota:
-        shutil.copy(os.path.join(cwd,"CPU_training.log"),f'{vol_path}/{args.data_name}/{args.model_name}/{now.year}_{now.month}_{now.day}/{str(now)}_CPU_training.log')
+        shutil.copy(os.path.join(cwd,"CPU_training.log"),f'{vol_path}/{args.data_name}/{args.model_name}/{now.year}_{now.month}_{now.day}/CPU_log/{now.hour}_{now.minute}_CPU_training.log')
 
 
 

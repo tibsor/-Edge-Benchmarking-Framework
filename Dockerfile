@@ -8,9 +8,9 @@ WORKDIR /benchmark/
 COPY ./Mechanical-datasets/ /benchmark/Mechanical-datasets/
 COPY ./MFPT_Fault_Data_Sets/ /benchmark/MFPT_Fault_Data_Sets/
 # "apt" has unstable CLI, so we use apt-get instead
-RUN apt-get update
+RUN apt update
 # install necessary dependencies for python packages
-RUN apt-get install -y libglib2.0-0 libsm6 libxrender1 libxext6
+RUN apt install -y libglib2.0-0 libsm6 libxrender1 libxext6
 
 
 # get env packages & install them

@@ -24,16 +24,18 @@ def init():
     model_dict = {"model": None,"dataset": None, "normalizetype": None,"processing_type": None}
     model_folders = os.path.join(dataset_folders,dataset_name)
     model_name = questionary.select("Choose model folder:", choices=os.listdir(model_folders)).ask()
-    working_dir = os.path.join(model_folders,model_name)
+    model_dir = os.path.join(model_folders,model_name)
     plot_selection = questionary.select("Train or inference:", choices=["train", "inference"]).ask()
-    RAM_log_path = os.path.join (working_dir,train_RAM_log_name)
-    CPU_log_path = os.path.join(working_dir, train_CPU_log_name)
+    # date_dir = questionary.select("Select date:", choices=os.listdir(model_dir)).ask()
+    # working_dir = os.path.join(model_dir,date_dir)
+    # RAM_log_path = os.path.join (working_dir,train_RAM_log_name)
+    # CPU_log_path = os.path.join(working_dir, train_CPU_log_name)
     if plot_selection == "train":
-        cpu_values_file = os.path.join(working_dir, train_cpu_file_name)
-        memory_values_file = os.path.join(working_dir, train_memory_file_name)    
+        cpu_values_file = os.path.join(model_dir, train_cpu_file_name)
+        memory_values_file = os.path.join(model_dir, train_memory_file_name)    
     else:
-        cpu_values_file = os.path.join(working_dir, inference_cpu_file_name)
-        memory_values_file = os.path.join(working_dir, inference_memory_file_name)
+        cpu_values_file = os.path.join(model_dir, inference_cpu_file_name)
+        memory_values_file = os.path.join(model_dir, inference_memory_file_name)
     if os.path.isfile(cpu_values_file):
         cpu_values_list = []
         with open(cpu_values_file,"r") as csvfile:
