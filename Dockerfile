@@ -3,6 +3,7 @@ FROM python:3.7.13-slim-buster AS base
 # create virtual environment
 ENV VIRTUAL_ENV=/opt/benchmark_env
 RUN python3 -m venv /opt/benchmark_env
+RUN /opt/benchmark_env/bin/python3 -m pip install --upgrade pip
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 WORKDIR /benchmark/
 COPY ./Mechanical-datasets/ /benchmark/Mechanical-datasets/
