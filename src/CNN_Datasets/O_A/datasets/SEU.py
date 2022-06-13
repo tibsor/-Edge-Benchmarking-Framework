@@ -28,7 +28,7 @@ def get_files(root, test=False):
     gearbox_folder = f'{SEU_path}/gearbox'
     datasetname = os.listdir(os.path.join(root, os.listdir(root)[1]))  # 2:bearingset, 1:gearset
     for index,name in enumerate(datasetname):
-        if name == 'dds':
+        if name == 'dds' or name == 'README.md':
             datasetname.pop(index)
     root1 = os.path.join(gearbox_folder,"bearingset")
     root2 = os.path.join(gearbox_folder,"gearset")
