@@ -1,200 +1,89 @@
 # importing libraries
+import shutil
 import sys
 import os
 import time
-import warnings
 import argparse
-import itertools
 from sklearn.utils import shuffle
 from utils.logger import setlogger
-import models
 import csv
-import torch
+import logging
 from datetime import datetime
-import numpy as np
-import random
-from memory_profiler import profile
 args = None
 time_dict={"parse_args()": None, "create_folder()": None,"inference.init()": None, "inference.setup()": None, "inference.evaluate()": None}
 time_list=[]
-import psutil
 csv_header=None
-vol_path='/inference/volume_data'
-mem_profiler_path=os.path.join(vol_path,'memory_profiler.log')
+vol_path='/benchmark/volume_data'
+dataset_folder_name = {"SEU":"Mechanical-datasets", "MFPT":"MFPT_Fault_Data_Sets"}
+
+#mem_profiler_path=os.path.join(vol_path,'memory_profiler.log')
 global now
-# Getting % usage of virtual_memory
-# print('System RAM % used:', psutil.virtual_memory()[2])
-mem_log_file=open(mem_profiler_path,'a+')
+
 
 global run_type
 
 
-@profile(stream=mem_log_file)
 def parse_args():
-    start = time.time()
-    
-    parser = argparse.ArgumentParser(description='Inference')
+
+    parser = argparse.ArgumentParser(description='Train')
+
     # basic parameters
     parser.add_argument('--model_name', type=str, default='MLP', help='the name of the model')
     parser.add_argument('--data_name', type=str, default='SEU', help='the name of the data')
-    parser.add_argument('--data_dir', type=str, default= "/inference/Mechanical-datasets", help='the directory of the data')
+    parser.add_argument('--data_dir', type=str, default= "/benchmark/", help='the directory of the data')
     parser.add_argument('--normalizetype', type=str, choices=['0-1', '1-1', 'mean-std'], default='0-1', help='data normalization methods')
     parser.add_argument('--processing_type', type=str, choices=['R_A', 'R_NA', 'O_A'], default='O_A',
                         help='R_A: random split with data augmentation, R_NA: random split without data augmentation, O_A: order split with data augmentation')
     parser.add_argument('--checkpoint_dir', type=str, default='./checkpoint', help='the directory to save the model')
+    parser.add_argument('--cuda_device', type=str, default='0', help='assign device')
+    parser.add_argument("--pretrained", type=bool, default=True, help='whether to load the pretrained model')
+    parser.add_argument('--batch_size', type=int, default=64, help='batchsize of the training process')
+    parser.add_argument('--num_workers', type=int, default=0, help='the number of training process')
+
+    # optimization information
+    parser.add_argument('--opt', type=str, choices=['sgd', 'adam'], default='adam', help='the optimizer')
+    parser.add_argument('--lr', type=float, default=0.001, help='the initial learning rate')
+    parser.add_argument('--momentum', type=float, default=0.9, help='the momentum for sgd')
+    parser.add_argument('--weight_decay', type=float, default=1e-5, help='the weight decay')
+    parser.add_argument('--lr_scheduler', type=str, choices=['step', 'exp', 'stepLR', 'fix'], default='fix', help='the learning rate schedule')
+    parser.add_argument('--gamma', type=float, default=0.1, help='learning rate scheduler parameter for step and exp')
+    parser.add_argument('--steps', type=str, default='9', help='the learning rate decay for step and stepLR')
+    parser.add_argument('--steps1', type=str, default='50,80',
+                        help='the learning rate decay for step and stepLR')
+
+    # save, load and display information
+    parser.add_argument('--middle_epoch', type=int, default=10, help='middle number of epoch')
+
+    # save, load and display information
+    parser.add_argument('--max_epoch', type=int, default=10, help='max number of epoch')
+    parser.add_argument('--print_step', type=int, default=100, help='the interval of log training information')
     args = parser.parse_args()
-    run_type = parser.description
+    if args.data_dir == '/benchmark/':
+        args.data_dir = os.path.join("/benchmark/", dataset_folder_name[args.data_name])
     global csv_model_values
-    csv_model_values=[now, args.model_name, args.data_name, args.normalizetype, args.processing_type]
-    end = time.time()
-    print("parse_args() function takes", end-start, "seconds")
-    time_dict['parse_args()']=end-start
-    time_list.append(end-start)
+    csv_model_values=[now, args.model_name, args.data_name, args.normalizetype, args.processing_type, args.batch_size, args.opt, args.lr, args.steps, args.max_epoch]
+
+
     return args
 
-class inference(object):
-    @profile(stream=mem_log_file)
-    def __init__(self, args, save_dir):
-        start = time.time()
-        self.args = args
-        self.save_dir = save_dir
-        end = time.time()
-        print("class __init__() function takes", end-start, "seconds")
-        time_dict["inference.init()"]=end-start
-        time_list.append(end-start)
-
-
-    @profile(stream=mem_log_file)
-    def setup(self):
-        """
-        Initialize the dataset, model
-        :return:
-        """
-        start = time.time()
-        args = self.args
-        if torch.cuda.is_available():
-            self.device = torch.device("cuda")
-            self.device_count = torch.cuda.device_count()
-            assert args.batch_size % self.device_count == 0, "batch size should be divided by device count"
-        else:
-            warnings.warn("gpu is not available, using CPU")
-            self.device = torch.device("cpu")
-            self.device_count = 1
-        
-        # Load the datasets
-        if args.processing_type == 'O_A':
-            from CNN_Datasets.O_A import datasets
-            Dataset = getattr(datasets, args.data_name)
-        elif args.processing_type == 'R_A':
-            from CNN_Datasets.R_A import datasets
-            Dataset = getattr(datasets, args.data_name)
-        elif args.processing_type == 'R_NA':
-            from CNN_Datasets.R_NA import datasets
-            Dataset = getattr(datasets, args.data_name)
-        else:
-            raise Exception("processing type not implement")    
-        
-        val_dataset_path = '/inference/val_dataset.h5'
-        val_dataset = torch.load(val_dataset_path) 
-        global batch_size
-        batch_size = 1
-        self.val_dataloader = torch.utils.data.DataLoader(val_dataset,batch_size=batch_size, shuffle=False)
-
-        self.model = getattr(models, args.model_name)(in_channel=Dataset.inputchannel, out_channel=Dataset.num_classes)
-        
-        
-                
-        
-        model_checkpoint = torch.load('/inference/81-0.6310-best_model.pth', map_location=torch.device('cpu'))
-        from collections import OrderedDict
-        new_state_dict = OrderedDict()
-        for k,v in model_checkpoint.items():
-            name = k.replace("module.", "") #remove module string
-            new_state_dict[name] = v
-        self.model.load_state_dict(model_checkpoint, strict=False)
-        self.criterion = torch.nn.CrossEntropyLoss()
-        # Getting % usage of virtual_memory ( 3rd field)
-        # print('System RAM % used in setup:', psutil.virtual_memory()[2])
-        end = time.time()
-        print("class setup() function takes", end-start, "seconds")
-        time_dict["inference.setup()"]=end-start
-        time_list.append(end-start)
-        
-
-    @profile(stream=mem_log_file)
-    def evaluate(self, no_obs: int = 1):
-        start = time.time()
-        for phase in ['val']:
-            valid_loss = 0.0
-            self.model.eval()
-            random.seed(2022)
-            randomlist = random.sample(range(0, len(self.val_dataloader.dataset.labels)-1), no_obs)
-            with torch.set_grad_enabled(phase == 'train'):
-
-                for val in randomlist:
-
-                    sample_at = val
-                    k = int(np.floor(sample_at/batch_size))
-
-                    data,labels = next(itertools.islice(self.val_dataloader, k, None))
-
-                    logits = self.model(data)
-                    loss = self.criterion(logits, labels)
-                    pred = logits.argmax(dim=1)
-                    correct = torch.eq(pred, labels).float().sum().item()
-                    loss_temp = loss.item() * data.size(0)
-                    print(f"Correct: {correct}, Loss Temp: {loss_temp}\n")
-                #     data = self.val_dataloader[phase].dataset.seq_data[val]
-                #     labels = self.val_dataloader[phase].dataset.labels[val]
-                #     logits = self.model(data)
-                #     loss = self.criterion(logits, labels)
-                #     pred = logits.argmax(dim=1)
-                #     correct = torch.eq(pred, labels).float().sum().item()
-                #     loss_temp = loss.item() * data.size(0)
-                
-                    # for batch_id, (data, labels) in enumerate(self.val_dataloader): ## DEPRECATED
-                #                     # forward
-                #     for val in randomlist:
-                #         # Getting % usage of virtual_memory ( 3rd field)
-                #         #print(f"RAM memory % used in for {batch_id}:{psutil.virtual_memory()[2]}")
-                #         if val == batch_id:
-                #             logits = self.model(data)
-                #             loss = self.criterion(logits, labels)
-                #             pred = logits.argmax(dim=1)
-                #             correct = torch.eq(pred, labels).float().sum().item()
-                #             loss_temp = loss.item() * data.size(0)
-                #             # with open("/inference/volume_data/values.txt","a") as f:
-                #             #     f.write(f"{batch_id}; Correct: {correct}; loss: {loss_temp}\n")
-                #             #print(f"Correct: {correct}, Loss Temp: {loss_temp}\n")
-                #             break
-            # Getting % usage of virtual_memory
-            # print('System RAM % used in inference:', psutil.virtual_memory()[2])
-        end = time.time()
-        print("class inference.evaluate() function takes", end-start, "seconds")
-        time_dict["inference.evaluate()"]=end-start
-        time_list.append(end-start)
-
-
+def folder_check(folder_path: str = None):
+    isdir = os.path.isdir(folder_path)
+    if isdir:
+        pass
+    else:
+        os.mkdir(folder_path)
+    
 def create_folder(model_name: str = None, dataset: str = None):
-    start = time.time()
-    global memory_limit, cpu_quota, cpu_quota_path, mem_rt_path, csv_header 
-    model_folder = os.path.join(vol_path, model_name)
-    isdir = os.path.isdir(model_folder)
-    if isdir:
-        pass
-    else:
-        os.mkdir(model_folder)
+    global memory_limit, cpu_quota, cpu_quota_path, mem_rt_path, csv_header, model_folder
 
-    dataset_folder = os.path.join(model_folder, dataset)
-    isdir = os.path.isdir(dataset_folder)
-    if isdir:
-        pass
-    else:
-        os.mkdir(dataset_folder)
-
-    model_details_path = os.path.join(dataset_folder, "inference_run_details.csv")
+    folder_check(vol_path)
+    dataset_folder = os.path.join(vol_path, dataset)
+    folder_check(dataset_folder)    
+    model_folder = os.path.join(dataset_folder, model_name)
+    folder_check(model_folder)
+    model_details_path = os.path.join(model_folder, "inference_run_details.csv")
     if not(os.path.exists(model_details_path)):
-        csv_model_header=["timedate", "model_type", "dataset", "normalizetype", "processing_type"]
+        csv_model_header=["timedate", "model", "dataset", "normalizetype", "processing_type", "batch_size", "optimizer", "learning_rate", "steps", "max_epoch"]
         with open(model_details_path,'a+', encoding='UTF8', newline="") as f:
             writer=csv.writer(f)
             writer.writerow(csv_model_header)
@@ -203,11 +92,11 @@ def create_folder(model_name: str = None, dataset: str = None):
         with open(model_details_path, "a+", encoding='UTF8', newline="") as f:
             writer=csv.writer(f)
             writer.writerow(csv_model_values)
-    mem_rt_path=os.path.join(vol_path, dataset_folder, 'inference_memory_runtime_values.csv')
-    cpu_quota_path=os.path.join(vol_path, dataset_folder, 'inference_cpu_quota_runtime_values.csv')
+    
+    mem_rt_path=os.path.join(model_folder, 'inference_memory_runtime_values.csv')
+    cpu_quota_path=os.path.join(model_folder, 'inference_cpu_quota_runtime_values.csv')
     if "MEM_LIMIT" in os.environ:
         memory_limit = int(os.environ["MEM_LIMIT"])
-        memory_reserve=memory_limit/2.0
         csv_header=["timedate", "memory_limit","parse_args()", "create_folder()","inference.init()", "inference.setup()", "inference.evaluate()"]
         if not(os.path.exists(mem_rt_path)):
             with open(mem_rt_path,'a+', encoding='UTF8', newline="") as f:
@@ -215,7 +104,6 @@ def create_folder(model_name: str = None, dataset: str = None):
                 writer.writerow(csv_header)
     else: 
         memory_limit=None
-        memory_reserve=None
 
     if "CPU_QUOTA" in os.environ:
         cpu_quota=int(os.environ["CPU_QUOTA"])
@@ -224,58 +112,103 @@ def create_folder(model_name: str = None, dataset: str = None):
         if not(os.path.exists(cpu_quota_path)):
             with open(cpu_quota_path,'a+', encoding='UTF8', newline="") as f:
                 writer=csv.writer(f)
-                # writer.writerow(csv_model_header)
-                # writer.writerow(csv_model_values)
                 writer.writerow(csv_header)
     else: cpu_quota=None
-    end = time.time()
-    print("create_folder() function takes", end-start, "seconds")
-    time_dict["create_folder()"]=end-start
-    time_list.append(end-start)
-
+    
+    return model_folder
 
 
 if __name__ == '__main__':
     
     now = datetime.now()
+    start = time.time()
     args = parse_args()
-    create_folder(model_name=args.model_name, dataset=args.data_name)
-    values_list=[]
-    try:
-        eval_output = inference(args, vol_path)
-        eval_output.setup()
-        eval_output.evaluate()
-        mem_log_file.close()
-        print(time_dict,"\n")
-        if csv_header != None:
-            values_list.append(now)
-        else: raise ValueError("CSV HEADER IS NONE!")
-        if memory_limit!=None:
-            values_list.append(memory_limit)
-            values_list.append(time_dict['parse_args()'])
-            values_list.append(time_dict['create_folder()'])
-            values_list.append(time_dict['inference.init()'])
-            values_list.append(time_dict['inference.setup()'])
-            values_list.append(time_dict['inference.evaluate()'])
-            with open(mem_rt_path,'a+', encoding='UTF8', newline="") as f:
-                writer=csv.writer(f, delimiter=',')
-                writer.writerow(values_list)
-        if cpu_quota!=None:
-            values_list.append(cpu_quota)
-            values_list.append(time_dict['parse_args()'])
-            values_list.append(time_dict['create_folder()'])
-            values_list.append(time_dict['inference.init()'])
-            values_list.append(time_dict['inference.setup()'])
-            values_list.append(time_dict['inference.evaluate()'])
-            with open(cpu_quota_path,'a+', encoding='UTF8', newline="") as f:
-                writer=csv.writer(f, delimiter=',')
-                writer.writerow(values_list)
+    end = time.time()
+    print("parse_args() function takes", end-start, "seconds")
+    time_dict['parse_args()']=end-start
+    time_list.append(end-start)
+    CNN_datasets = []
+    CNN_datasets.append("MLP")
+    CNN_datasets.append("CNN_1d")
+    CNN_datasets.append("CNN_2d")
+    CNN_datasets.append("Resnet1d")
+    CNN_datasets.append("Alexnet1d")
+    CNN_datasets.append("BiLSTM1d")
+    CNN_datasets.append("LeNet1d")
 
-        # print("Reached while loop")
-        # while True:
-        #     pass
-    except KeyboardInterrupt:
-        sys.stderr.write("Interrupt detected...")
-    except MemoryError:
-        sys.stderr.write('\n\nERROR: Memory Exception\n')
-        sys.exit(1)
+
+    AE_dataset_flag = True
+
+    for i in CNN_datasets:
+        if args.model_name == i:
+            from utils.inference_utils import inference_utils
+            AE_dataset_flag = False
+            break
+    if AE_dataset_flag:
+        from utils.inference_utils_ae import inference_utils
+    start = time.time()
+    save_dir = create_folder(model_name=args.model_name, dataset=args.data_name)
+    end = time.time()
+    print("create_folder() takes", end-start, "seconds")
+    time_dict["create_folder()"]=end-start
+    # set the logger
+    cwd = os.getcwd()
+    if memory_limit:
+        setlogger(os.path.join(cwd,"RAM_training.log"))
+    if cpu_quota:
+        setlogger(os.path.join(cwd, 'CPU_training.log'))
+    # save the args
+    for k, v in args.__dict__.items():
+        logging.info("{}: {}".format(k, v))
+
+    values_list=[]
+    start = time.time()
+    trainer = inference_utils(args, save_dir)
+    end = time.time()
+    print("inference.__init__() takes", end-start, "seconds")
+    time_dict["inference.init()"]=end-start
+    time_list.append(end-start)
+    start = time.time()    
+    trainer.setup()
+    end = time.time()
+    print("inference.setup() takes", end-start, "seconds")
+    time_dict["inference.setup()"]=end-start
+    time_list.append(end-start)
+    start = time.time()
+    trainer.evaluate()
+    end = time.time()
+    print("inference.evaluate() takes", end-start, "seconds")
+    time_dict["inference.evaluate()"]=end-start
+    time_list.append(end-start)
+    print(time_dict,"\n")
+    if csv_header != None:
+        values_list.append(now)
+    else: raise ValueError("CSV HEADER IS NONE!")
+    if memory_limit!=None:
+        values_list.append(memory_limit)
+        values_list.append(time_dict['parse_args()'])
+        values_list.append(time_dict['create_folder()'])
+        values_list.append(time_dict['inference.init()'])
+        values_list.append(time_dict['inference.setup()'])
+        values_list.append(time_dict['inference.evaluate()'])
+        with open(mem_rt_path,'a+', encoding='UTF8', newline="") as f:
+            writer=csv.writer(f, delimiter=',')
+            writer.writerow(values_list)
+    if cpu_quota!=None:
+        values_list.append(cpu_quota)
+        values_list.append(time_dict['parse_args()'])
+        values_list.append(time_dict['create_folder()'])
+        values_list.append(time_dict['inference.init()'])
+        values_list.append(time_dict['inference.setup()'])
+        values_list.append(time_dict['inference.evaluate()'])
+        with open(cpu_quota_path,'a+', encoding='UTF8', newline="") as f:
+            writer=csv.writer(f, delimiter=',')
+            writer.writerow(values_list)
+    #date_folder = os.path.join(model_folder,f'{now.year}_{now.month}_{now.day}')
+    # if memory_limit:
+    #     shutil.copy(os.path.join(cwd,"RAM_training.log"),f'{vol_path}/{args.data_name}/{args.model_name}/{now.year}_{now.month}_{now.day}/RAM_log/{now.hour}_{now.minute}_RAM_training.log')
+    # if cpu_quota:
+    #     shutil.copy(os.path.join(cwd,"CPU_training.log"),f'{vol_path}/{args.data_name}/{args.model_name}/{now.year}_{now.month}_{now.day}/CPU_log/{now.hour}_{now.minute}_CPU_training.log')
+
+
+

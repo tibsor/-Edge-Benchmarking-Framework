@@ -9,6 +9,7 @@ import torch
 from torch import nn
 from torch import optim
 import models
+vol_path = '/benchmark/volume_data'
 
 class train_utils(object):
     def __init__(self, args, save_dir):
@@ -51,8 +52,8 @@ class train_utils(object):
         print(Dataset)
 
         self.datasets = {}
-        if os.path.exists(f'/benchmark/volume_data/{args.data_name}/{args.data_name}_dataset.h5'):
-            self.dataloaders = torch.load(f'/benchmark/volume_data/{args.data_name}/{args.data_name}_dataset.h5') # mmap mode helps keep dataset off RAM
+        if os.path.exists(f'{vol_path}/{args.data_name}/{args.data_name}_dataset.h5'):
+            self.dataloaders = torch.load(f'{vol_path}/{args.data_name}/{args.data_name}_dataset.h5') # mmap mode helps keep dataset off RAM
             self.datasets['train'], self.datasets['val'] = self.dataloaders['train'], self.dataloaders['val']
 
         else:
@@ -63,10 +64,10 @@ class train_utils(object):
                                                            num_workers=args.num_workers,
                                                            pin_memory=(True if self.device == 'cuda' else False)) for x in ['train', 'val']}
 
-            torch.save(self.dataloaders,f'/benchmark/volume_data/{args.data_name}/{args.data_name}_dataset.h5')
+            torch.save(self.dataloaders,f'{vol_path}/{args.data_name}/{args.data_name}_dataset.h5')
         self.model = getattr(models, args.model_name)
         # Define the model
-        if args.model_name == 'CNN_1d':
+        if args.model_name == 'CNN_1d' or args.model_name == 'CNN_2d':
             self.model = self.model.CNN(in_channel=Dataset.inputchannel, out_channel=Dataset.num_classes)
         elif args.model_name == 'Alexnet1d':
             self.model = self.model.AlexNet(in_channel=Dataset.inputchannel, out_channel=Dataset.num_classes)
@@ -222,9 +223,17 @@ class train_utils(object):
 
             if self.lr_scheduler is not None:
                 self.lr_scheduler.step()
-        # logging.info("saving best model epoch {}, acc {:.4f}".format(tmp_epoch, best_acc))
-        # torch.save(tmp_state_dict, os.path.join(self.save_dir, '{}-{:.4f}-best_model.pth'.format(tmp_epoch, best_acc)))
-                        
+        tmp_path = os.path.join(vol_path, self.args.data_name, self.args.model_name)
+        found_model = None
+        for file in os.listdir(tmp_path):
+            if file.endswith(".pth"):
+                found_model = file
+        if found_model == None:
+            logging.info("saving best model epoch {}, acc {:.4f}".format(tmp_epoch, best_acc))
+            torch.save(tmp_state_dict, os.path.join(self.save_dir, '{}-{:.4f}-best_model.pth'.format(tmp_epoch, best_acc)))
+        else:
+            pass
+            #TODO: add check; if trained model is better than existing one, replace it            
 
 
 

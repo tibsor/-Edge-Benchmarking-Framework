@@ -11,6 +11,7 @@ from torch import optim
 import models
 import AE_Datasets
 import torch.nn.functional as F
+vol_path = '/benchmark/volume_data'
 
 
 def SAEloss(recon_x, x, z):
@@ -368,9 +369,19 @@ class train_utils(object):
 
             if self.lr_scheduler1 is not None:
                 self.lr_scheduler1.step()
-        # logging.info("saving best model epoch {}, acc {:.4f}".format(tmp_epoch, best_acc))
-        # torch.save(tmp_state_dict, os.path.join(self.save_dir, '{}-{:.4f}-best_model.pth'.format(tmp_epoch, best_acc)))
-                        
+        tmp_path = os.path.join(vol_path, self.args.data_name, self.args.model_name)
+        found_model = None
+        for file in os.listdir(tmp_path):
+            if file.endswith(".pth"):
+                found_model = file
+        if found_model == None:
+            logging.info("saving best model epoch {}, acc {:.4f}".format(tmp_epoch, best_acc))
+            torch.save(tmp_state_dict, os.path.join(self.save_dir, '{}-{:.4f}-best_model.pth'.format(tmp_epoch, best_acc)))
+        else:
+            pass
+            #TODO: add check; if trained model is better than existing one, replace it            
+
+
 
 
 

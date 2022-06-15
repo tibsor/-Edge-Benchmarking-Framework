@@ -17,7 +17,6 @@ csv_header=None
 vol_path='/benchmark/volume_data'
 dataset_folder_name = {"SEU":"Mechanical-datasets", "MFPT":"MFPT_Fault_Data_Sets"}
 def parse_args():
-    start = time.time()
 
     parser = argparse.ArgumentParser(description='Train')
 
@@ -57,10 +56,6 @@ def parse_args():
     global csv_model_values
     csv_model_values=[now, args.model_name, args.data_name, args.normalizetype, args.processing_type, args.batch_size, args.opt, args.lr, args.steps, args.max_epoch]
 
-    end = time.time()
-    print("parse_args() function takes", end-start, "seconds")
-    time_dict['parse_args()']=end-start
-    time_list.append(end-start)
     return args
 
 def folder_check(folder_path: str = None):
@@ -72,7 +67,6 @@ def folder_check(folder_path: str = None):
     
 
 def create_folder(model_name: str = None, dataset: str = None):
-    start = time.time()
     global memory_limit, cpu_quota, cpu_quota_path, mem_rt_path, csv_header 
     folder_check(vol_path)
     dataset_folder = os.path.join(vol_path, dataset)
@@ -101,7 +95,6 @@ def create_folder(model_name: str = None, dataset: str = None):
         RAM_log_folder = os.path.join(date_folder,"RAM_log")
         folder_check(RAM_log_folder)
         memory_limit = int(os.environ["MEM_LIMIT"])
-        memory_reserve=memory_limit/2.0
         csv_header=["timedate", "memory_limit","parse_args()", "create_folder()","train.init()", "train.setup()", "train.evaluate()"]
         if not(os.path.exists(mem_rt_path)):
             with open(mem_rt_path,'a+', encoding='UTF8', newline="") as f:
@@ -109,7 +102,6 @@ def create_folder(model_name: str = None, dataset: str = None):
                 writer.writerow(csv_header)
     else: 
         memory_limit=None
-        memory_reserve=None
 
     if "CPU_QUOTA" in os.environ:
         CPU_log_folder = os.path.join(date_folder,"CPU_log")
@@ -122,7 +114,6 @@ def create_folder(model_name: str = None, dataset: str = None):
                 writer=csv.writer(f)
                 writer.writerow(csv_header)
     else: cpu_quota=None
-    end = time.time()
     print("create_folder() function takes", end-start, "seconds")
     time_dict["create_folder()"]=end-start
     time_list.append(end-start)
@@ -132,7 +123,12 @@ def create_folder(model_name: str = None, dataset: str = None):
 
 if __name__ == '__main__':
     now = datetime.now()
+    start = time.time()
     args = parse_args()
+    end = time.time()
+    print("parse_args() function takes", end-start, "seconds")
+    time_dict['parse_args()']=end-start
+    time_list.append(end-start)
     CNN_datasets = []
     CNN_datasets.append("MLP")
     CNN_datasets.append("CNN_1d")
@@ -142,7 +138,6 @@ if __name__ == '__main__':
     CNN_datasets.append("BiLSTM1d")
     CNN_datasets.append("LeNet1d")
 
-
     AE_dataset_flag = True
 
     for i in CNN_datasets:
@@ -150,14 +145,18 @@ if __name__ == '__main__':
             from utils.train_utils import train_utils
             AE_dataset_flag = False
             break
-        # else:
-        #     from utils.train_utils_ae import train_utils
     if AE_dataset_flag:
         from utils.train_utils_ae import train_utils
     os.environ['CUDA_VISIBLE_DEVICES'] = args.cuda_device.strip()
     # Prepare the saving path for the model
-
+    
+    start = time.time()
     save_dir = create_folder(model_name=args.model_name, dataset=args.data_name)
+    end = time.time()
+    print("create_folder() takes", end-start, "seconds")
+    time_dict["create_folder()"]=end-start
+    time_list.append(end-start)
+
     # set the logger
     cwd = os.getcwd()
     if memory_limit:
@@ -168,25 +167,32 @@ if __name__ == '__main__':
     for k, v in args.__dict__.items():
         logging.info("{}: {}".format(k, v))
     values_list=[]
+
     start = time.time()
     trainer = train_utils(args, save_dir)
     end = time.time()
+
     print("train.__init__() takes", end-start, "seconds")
     time_dict["train.init()"]=end-start
     time_list.append(end-start)
+
     start = time.time()    
     trainer.setup()
     end = time.time()
+
     print("train.setup() takes", end-start, "seconds")
     time_dict["train.setup()"]=end-start
     time_list.append(end-start)
+
     start = time.time()
     trainer.train()
     end = time.time()
+
     print("train.evaluate() takes", end-start, "seconds")
     time_dict["train.evaluate()"]=end-start
     time_list.append(end-start)
     print(time_dict,"\n")
+
     if csv_header != None:
         values_list.append(now)
     else: raise ValueError("CSV HEADER IS NONE!")
