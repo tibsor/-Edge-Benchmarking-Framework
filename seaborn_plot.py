@@ -16,8 +16,6 @@ def init():
     train_memory_file_name = "train_memory_runtime_values.csv"
     inference_cpu_file_name = "inference_cpu_quota_runtime_values.csv"
     inference_memory_file_name = "inference_memory_runtime_values.csv"
-    train_RAM_log_name = 'RAM_training.log'
-    train_CPU_log_name = 'CPU_training.log' 
     global model_dict
     dataset_folders = f'{cwd}/host_data'
     dataset_name = questionary.select("Choose dataset:",choices=os.listdir(dataset_folders)).ask()
@@ -26,10 +24,6 @@ def init():
     model_name = questionary.select("Choose model folder:", choices=os.listdir(model_folders)).ask()
     model_dir = os.path.join(model_folders,model_name)
     plot_selection = questionary.select("Train or inference:", choices=["train", "inference"]).ask()
-    # date_dir = questionary.select("Select date:", choices=os.listdir(model_dir)).ask()
-    # working_dir = os.path.join(model_dir,date_dir)
-    # RAM_log_path = os.path.join (working_dir,train_RAM_log_name)
-    # CPU_log_path = os.path.join(working_dir, train_CPU_log_name)
     if plot_selection == "train":
         cpu_values_file = os.path.join(model_dir, train_cpu_file_name)
         memory_values_file = os.path.join(model_dir, train_memory_file_name)    
@@ -51,23 +45,66 @@ def init():
             for row in csvreader:
                 memory_values_list.append(row)
 
-    if cpu_values_list != None and memory_values_list != None:
-        return cpu_values_list, memory_values_list, model_name, dataset_name
-    elif cpu_values_list != None:
-        return cpu_values_list, None, model_name, dataset_name
-    elif memory_values_list != None:
-        return None,memory_values_list, model_name, dataset_name
-    else: return None,None, model_name, dataset_name
+    date_dir = questionary.select("Select date:", choices=os.listdir(model_dir)).ask()
+    logs_dir = os.path.join(model_dir,date_dir)
+    RAM_log_path = os.path.join (logs_dir,'RAM_log')
+    CPU_log_path = os.path.join(logs_dir, 'CPU_log')
+
+    RAM_log_flag = folder_check(RAM_log_path)
+    CPU_log_flag = folder_check(CPU_log_path)
+
+    if RAM_log_flag:
+        ram_log_list = []
+        for file in os.listdir(RAM_log_path):
+            log_file = os.path.join(RAM_log_path, file)
+            with open(log_file, "r") as csvfile:
+                csvreader = csv.reader(csvfile, delimiter=',')
+                # runtime_header = next(csvreader, None)
+                for row in csvreader:
+                    ram_log_list.append(row)
 
 
-def folder_check(folder_path: str = None):
+    if CPU_log_flag:
+        cpu_log_list = []
+        for file in os.listdir(CPU_log_path):
+            log_file = os.path.join(CPU_log_path, file)
+            with open(log_file, "r") as csvfile:
+                csvreader = csv.reader(csvfile, delimiter=',')
+                # runtime_header = next(csvreader, None)
+                for row in csvreader:
+                    cpu_log_list.append(row)
+
+
+    if cpu_values_list != None and memory_values_list != None and cpu_log_list != None and ram_log_list != None:
+        return cpu_values_list, memory_values_list, cpu_log_list, ram_log_list, model_name, dataset_name
+    elif cpu_values_list != None and cpu_log_list != None:
+        return cpu_values_list, None, cpu_log_list, None, model_name, dataset_name
+    elif memory_values_list != None and ram_log_list != None :
+        return None,memory_values_list, None, ram_log_list, model_name, dataset_name
+    else: return None,None, None, None, model_name, dataset_name
+
+
+def folder_create(folder_path: str = None):
     isdir = os.path.isdir(folder_path)
     if isdir:
         pass
     else:
         os.mkdir(folder_path)
+        
     
+def folder_check(folder_path: str = None):
+    isdir = os.path.isdir(folder_path)
+    if isdir:
+        return True
+    else:
+        return False
 
+def file_check(file_path: str = None):
+    isfile = os.path.isfile(file_path)
+    if isfile:
+        return True
+    else:
+        return False
 
 def single_plots(x_axis: list = None, x1_axis: list = None, y_axis: list = None, model_name: str = None, dataset_name: str = None, RAM_flag: bool = False, CPU_flag: bool = False):
     cwd = os.getcwd()
@@ -79,19 +116,19 @@ def single_plots(x_axis: list = None, x1_axis: list = None, y_axis: list = None,
     date_now = datetime.date.today()
 
     plots_folder = os.path.join(cwd,'plots')
-    folder_check(plots_folder)
+    folder_create(plots_folder)
     
     model_folder = os.path.join(plots_folder, model_name)
-    folder_check(model_folder)
+    folder_create(model_folder)
     
     dataset_folder = os.path.join(model_folder, dataset_name)
-    folder_check(dataset_folder)
+    folder_create(dataset_folder)
 
     date_folder = os.path.join(dataset_folder, str(date_now))
-    folder_check(date_folder)
+    folder_create(date_folder)
 
     plots_path=os.path.join(plots_folder, model_name, dataset_name, str(date_now))
-    folder_check(plots_path)
+    folder_create(plots_path)
     
     total_time=0.0
     for index,i in enumerate(x_axis):
@@ -128,7 +165,7 @@ def single_plots(x_axis: list = None, x1_axis: list = None, y_axis: list = None,
         ax5.fig.suptitle(f"Model: {model_name}/Dataset: {dataset_name}\nRAM vs Eval Time")
         ax6.fig.suptitle(f"Model: {model_name}/Dataset: {dataset_name}\nRAM vs Total Time")
         plots_path = os.path.join(plots_path, "RAM Results")
-        folder_check(plots_path)
+        folder_create(plots_path)
         ax1.savefig(f'{plots_path}/{date_now}_RAM_1.png')
         ax2.savefig(f'{plots_path}/{date_now}_RAM_2.png')
         ax3.savefig(f'{plots_path}/{date_now}_RAM_3.png')
@@ -158,7 +195,7 @@ def single_plots(x_axis: list = None, x1_axis: list = None, y_axis: list = None,
         ax6.fig.suptitle(f"{model_name}/{dataset_name}\nCPU Cores vs Total Time")
 
         plots_path = os.path.join(plots_path, "CPU Results")
-        folder_check(plots_path)
+        folder_create(plots_path)
 
         ax1.savefig(f'{plots_path}/{date_now}_CPU_1.png')
         ax2.savefig(f'{plots_path}/{date_now}_CPU_2.png')
@@ -178,16 +215,16 @@ def main_plot(x_axis: list = None, x1_axis: list = None, y_axis: list = None, mo
     create_folder_list=[]
     
     plots_folder = os.path.join(cwd,'plots')
-    folder_check(plots_folder)
+    folder_create(plots_folder)
     
     model_folder = os.path.join(plots_folder, model_name)
-    folder_check(model_folder)
+    folder_create(model_folder)
     
     dataset_folder = os.path.join(model_folder, dataset_name)
-    folder_check(dataset_folder)
+    folder_create(dataset_folder)
     
     plots_path=os.path.join(plots_folder, model_name, dataset_name)
-    folder_check(plots_path)
+    folder_create(plots_path)
     
     total_time=0.0
     for index,i in enumerate(x_axis):
@@ -208,7 +245,7 @@ def main_plot(x_axis: list = None, x1_axis: list = None, y_axis: list = None, mo
 if __name__=="__main__":
     cpu_values_list = None
     memory_values_list = None
-    cpu_values_list, memory_values_list, model_name, dataset_name = init()
+    cpu_values_list, memory_values_list, cpu_log_list, ram_log_list, model_name, dataset_name = init()
     time_sum=0.0
 
     RAM_limit_list=[]
