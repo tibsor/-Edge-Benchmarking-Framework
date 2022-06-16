@@ -81,21 +81,14 @@ def create_folder(model_name: str = None, dataset: str = None):
     folder_check(dataset_folder)    
     model_folder = os.path.join(dataset_folder, model_name)
     folder_check(model_folder)
-    model_details_path = os.path.join(model_folder, "inference_run_details.csv")
-    if not(os.path.exists(model_details_path)):
-        csv_model_header=["timedate", "model", "dataset", "normalizetype", "processing_type", "batch_size", "optimizer", "learning_rate", "steps", "max_epoch"]
-        with open(model_details_path,'a+', encoding='UTF8', newline="") as f:
-            writer=csv.writer(f)
-            writer.writerow(csv_model_header)
-            writer.writerow(csv_model_values)
-    else:
-        with open(model_details_path, "a+", encoding='UTF8', newline="") as f:
-            writer=csv.writer(f)
-            writer.writerow(csv_model_values)
-    
+    now = datetime.now()
+    date_folder = os.path.join(model_folder,f'{now.year}_{now.month}_{now.day}')
+    folder_check(date_folder)
     mem_rt_path=os.path.join(model_folder, 'inference_memory_runtime_values.csv')
     cpu_quota_path=os.path.join(model_folder, 'inference_cpu_quota_runtime_values.csv')
     if "MEM_LIMIT" in os.environ:
+        RAM_log_folder = os.path.join(date_folder,"RAM_log")
+        folder_check(RAM_log_folder)
         memory_limit = int(os.environ["MEM_LIMIT"])
         csv_header=["timedate", "memory_limit","parse_args()", "create_folder()","inference.init()", "inference.setup()", "inference.evaluate()"]
         if not(os.path.exists(mem_rt_path)):
@@ -154,9 +147,9 @@ if __name__ == '__main__':
     # set the logger
     cwd = os.getcwd()
     if memory_limit:
-        setlogger(os.path.join(cwd,"RAM_training.log"))
+        setlogger(os.path.join(cwd,"RAM_inference.log"))
     if cpu_quota:
-        setlogger(os.path.join(cwd, 'CPU_training.log'))
+        setlogger(os.path.join(cwd, 'CPU_inference.log'))
     # save the args
     for k, v in args.__dict__.items():
         logging.info("{}: {}".format(k, v))
@@ -205,10 +198,10 @@ if __name__ == '__main__':
             writer=csv.writer(f, delimiter=',')
             writer.writerow(values_list)
     #date_folder = os.path.join(model_folder,f'{now.year}_{now.month}_{now.day}')
-    # if memory_limit:
-    #     shutil.copy(os.path.join(cwd,"RAM_training.log"),f'{vol_path}/{args.data_name}/{args.model_name}/{now.year}_{now.month}_{now.day}/RAM_log/{now.hour}_{now.minute}_RAM_training.log')
-    # if cpu_quota:
-    #     shutil.copy(os.path.join(cwd,"CPU_training.log"),f'{vol_path}/{args.data_name}/{args.model_name}/{now.year}_{now.month}_{now.day}/CPU_log/{now.hour}_{now.minute}_CPU_training.log')
+    if memory_limit:
+        shutil.copy(os.path.join(cwd,"RAM_inference.log"),f'{vol_path}/{args.data_name}/{args.model_name}/{now.year}_{now.month}_{now.day}/RAM_log/{now.hour}_{now.minute}_RAM_inference.log')
+    if cpu_quota:
+        shutil.copy(os.path.join(cwd,"CPU_inference.log"),f'{vol_path}/{args.data_name}/{args.model_name}/{now.year}_{now.month}_{now.day}/CPU_log/{now.hour}_{now.minute}_CPU_inference.log')
 
 
 

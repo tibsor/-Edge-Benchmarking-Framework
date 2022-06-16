@@ -1,4 +1,5 @@
 import itertools
+import logging
 import os
 import random
 import torch
@@ -78,7 +79,6 @@ class inference_utils(object):
             self.model = getattr(models, args.model_name)(in_channel=Dataset.inputchannel, out_channel=Dataset.num_classes)
         
         
-        #tmp_path = f'{vol_path}/{self.args.data_name}/{self.args.model_name}'
         tmp_path = os.path.join(vol_path, self.args.data_name, self.args.model_name)
         model_to_load = None
         for file in os.listdir(tmp_path):
@@ -116,4 +116,4 @@ class inference_utils(object):
                     pred = logits.argmax(dim=1)
                     correct = torch.eq(pred, labels).float().sum().item()
                     loss_temp = loss.item() * data.size(0)
-                    print(f"Correct: {correct}, Loss Temp: {loss_temp}\n")
+                    logging.info(f"Correct: {correct}, Loss Temp: {loss_temp}\n")

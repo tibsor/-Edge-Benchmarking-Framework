@@ -77,18 +77,6 @@ def create_folder(model_name: str = None, dataset: str = None):
     now = datetime.now()
     date_folder = os.path.join(model_folder,f'{now.year}_{now.month}_{now.day}')
     folder_check(date_folder)
-    model_details_path = os.path.join(model_folder, "train_run_details.csv")
-    if not(os.path.exists(model_details_path)):
-        csv_model_header=["timedate", "model", "dataset", "normalizetype", "processing_type", "batch_size", "optimizer", "learning_rate", "steps", "max_epoch"]
-        with open(model_details_path,'a+', encoding='UTF8', newline="") as f:
-            writer=csv.writer(f)
-            writer.writerow(csv_model_header)
-            writer.writerow(csv_model_values)
-    else:
-        with open(model_details_path, "a+", encoding='UTF8', newline="") as f:
-            writer=csv.writer(f)
-            writer.writerow(csv_model_values)
-    
     mem_rt_path=os.path.join(model_folder, 'train_memory_runtime_values.csv')
     cpu_quota_path=os.path.join(model_folder, 'train_cpu_quota_runtime_values.csv')
     if "MEM_LIMIT" in os.environ:
