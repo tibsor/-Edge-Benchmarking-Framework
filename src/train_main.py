@@ -73,14 +73,15 @@ def create_folder(model_name: str = None, dataset: str = None):
     folder_check(dataset_folder)    
     model_folder = os.path.join(dataset_folder, model_name)
     folder_check(model_folder)
+
     #csv_model_header=["model", "dataset", "normalizetype", "processing_type", "batch_type", "optimizer", "learning_rate", "steps", "max_epoch"]
     now = datetime.now()
-    date_folder = os.path.join(model_folder,f'{now.year}_{now.month}_{now.day}')
-    folder_check(date_folder)
     mem_rt_path=os.path.join(model_folder, 'train_memory_runtime_values.csv')
     cpu_quota_path=os.path.join(model_folder, 'train_cpu_quota_runtime_values.csv')
     if "MEM_LIMIT" in os.environ:
-        RAM_log_folder = os.path.join(date_folder,"RAM_log")
+        RAM_log_path = os.path.join(model_folder,'RAM_log')
+        folder_check(RAM_log_path)
+        RAM_log_folder = os.path.join(RAM_log_path,f'{now.year}_{now.month}_{now.day}')
         folder_check(RAM_log_folder)
         memory_limit = int(os.environ["MEM_LIMIT"])
         csv_header=["timedate", "memory_limit","parse_args()", "create_folder()","train.init()", "train.setup()", "train.evaluate()"]
@@ -92,7 +93,9 @@ def create_folder(model_name: str = None, dataset: str = None):
         memory_limit=None
 
     if "CPU_QUOTA" in os.environ:
-        CPU_log_folder = os.path.join(date_folder,"CPU_log")
+        CPU_log_path = os.path.join(model_folder,"CPU_log")
+        folder_check(CPU_log_path)
+        CPU_log_folder = os.path.join(CPU_log_path,f'{now.year}_{now.month}_{now.day}')
         folder_check(CPU_log_folder)
         cpu_quota=int(os.environ["CPU_QUOTA"])
         cpu_period=100000
@@ -206,9 +209,9 @@ if __name__ == '__main__':
             writer.writerow(values_list)
     #date_folder = os.path.join(model_folder,f'{now.year}_{now.month}_{now.day}')
     if memory_limit:
-        shutil.copy(os.path.join(cwd,"RAM_training.log"),f'{vol_path}/{args.data_name}/{args.model_name}/{now.year}_{now.month}_{now.day}/RAM_log/{now.hour}_{now.minute}_RAM_training.log')
+        shutil.copy(os.path.join(cwd,"RAM_training.log"),f'{vol_path}/{args.data_name}/{args.model_name}/RAM_log/{now.year}_{now.month}_{now.day}/{now.hour}_{now.minute}_RAM_training.log')
     if cpu_quota:
-        shutil.copy(os.path.join(cwd,"CPU_training.log"),f'{vol_path}/{args.data_name}/{args.model_name}/{now.year}_{now.month}_{now.day}/CPU_log/{now.hour}_{now.minute}_CPU_training.log')
+        shutil.copy(os.path.join(cwd,"CPU_training.log"),f'{vol_path}/{args.data_name}/{args.model_name}/CPU_log/{now.year}_{now.month}_{now.day}/{now.hour}_{now.minute}_CPU_training.log')
 
 
 

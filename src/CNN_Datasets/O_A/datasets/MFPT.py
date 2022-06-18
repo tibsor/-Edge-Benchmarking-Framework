@@ -1,4 +1,5 @@
 import os
+import re
 import pandas as pd
 from scipy.io import loadmat
 from sklearn.model_selection import train_test_split
@@ -26,13 +27,22 @@ def get_files(root, test=False):
     # '5 - Analyses',
     # '6 - Real World Examples
     # Generate a list of data
-
-    data_root1 = os.path.join('/tmp',root,m[4])  #Path of Three Baseline Conditions
-    data_root2 = os.path.join('/tmp',root,m[7])  #Path of Seven More Outer Race Fault Conditions
-    data_root3 = os.path.join('/tmp',root,m[3])  #Path of Seven Inner Race Fault Conditions
-    
-    dataset1 = os.listdir(os.path.join("/tmp", root, m[4]))  # 'Three Baseline Conditions'
-    dataset2 = os.listdir(os.path.join("/tmp", root, m[7]))  # 'Seven More Outer Race Fault Conditions'
+    pattern_1 = 'Three Baseline Conditions'
+    pattern_2 = 'Seven More Outer Race Fault Conditions'
+    pattern_3 = 'Seven Inner Race Fault Conditions'
+    pattern_list = [pattern_1, pattern_2, pattern_3]
+    for pattern in pattern_list:
+        for text in m:
+            if re.search(pattern, text):
+                if pattern == pattern_1:
+                    data_root1 = os.path.join('/tmp',root,text)#Path of Three Baseline Conditions
+                elif pattern == pattern_2:
+                    data_root2 = os.path.join('/tmp',root,text)
+                elif pattern == pattern_3:
+                    data_root3 = os.path.join('/tmp',root,text)
+                break
+    dataset1 = [ f for f in os.listdir(data_root1) if f.endswith(".mat") ]  # 'Three Baseline Conditions'
+    dataset2 = [ f for f in os.listdir(data_root2) if f.endswith(".mat") ]  # 'Seven More Outer Race Fault Conditions'
     dataset3 = [ f for f in os.listdir(data_root3) if f.endswith(".mat") ]  # 'Seven Inner Race Fault Conditions'
 
     path1=os.path.join('/tmp',data_root1,dataset1[0])
