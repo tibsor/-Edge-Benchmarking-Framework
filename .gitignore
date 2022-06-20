@@ -17,3 +17,5 @@ CWRU/
 Paderborn/
 src/init_env.txt
 src/train_main_ae.py
+MFPT_Dataset.tar.gz
+CWRU_Dataset.tar.gz

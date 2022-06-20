@@ -133,14 +133,9 @@ if __name__ == '__main__':
 
 
     AE_dataset_flag = True
+    from utils.inference_utils import inference_utils
 
-    for i in CNN_datasets:
-        if args.model_name == i:
-            from utils.inference_utils import inference_utils
-            AE_dataset_flag = False
-            break
-    if AE_dataset_flag:
-        from utils.inference_utils_ae import inference_utils
+
     start = time.time()
     save_dir = create_folder(model_name=args.model_name, dataset=args.data_name)
     end = time.time()

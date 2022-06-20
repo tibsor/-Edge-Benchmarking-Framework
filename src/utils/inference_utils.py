@@ -1,6 +1,7 @@
 import itertools
 import logging
 import os
+from pyexpat import model
 import random
 import torch
 import warnings
@@ -75,6 +76,8 @@ class inference_utils(object):
             self.model = getattr(models, args.model_name)(in_channel=Dataset.inputchannel, out_channel=Dataset.num_classes)
         elif args.model_name == 'LeNet1d':
             self.model = self.model.LeNet(in_channel=Dataset.inputchannel, out_channel=Dataset.num_classes)
+        elif args.model_name == 'Sae1d' or args.model_name == 'Ae1d':
+            raise NotImplementedError('Inference not implemented for Sae1d & Ae1d models!')
         else:
             self.model = getattr(models, args.model_name)(in_channel=Dataset.inputchannel, out_channel=Dataset.num_classes)
         

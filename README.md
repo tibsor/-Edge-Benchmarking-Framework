@@ -44,6 +44,8 @@ Note that the name of the image (`bench_fw`) is important, as it will be require
 - `inference_menu_ram.sh`
 - `inference_menu_cpu.sh`
 
+In order to run the inference script, first you must run a full training process in order for a model to be trained and saved.
+
 IMPORTANT: The python script running inside the container requires a `MEM_LIMIT` or `CPU_QUOTA` environment value in order to properly write on the shared volume data.
 
 4. Create a local python env with the `plot_env.txt` file and then [activate it](https://docs.python.org/3/tutorial/venv.html). Afterwards, run the `seaborn_plot.py` to see get total runtime plots as well as time-per-epoch plots.
