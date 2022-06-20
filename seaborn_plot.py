@@ -263,59 +263,73 @@ def epoch_plot (cpu_runtime_values = None, ram_runtime_values = None, model_name
 
             last_epoch_timedate_struct = []
             for file in os.listdir(folder_path):
-                ram_log_list = []
-                ram_rt_list = []
-                ram_rt_datetime_struct = []
-                match_list =[]
-                train_log_timedate_list = []
-                train_log_timedate_struct = []
-                list_items = None
-                list_element = None
-                _item = None
-                log_file = os.path.join(folder_path, file)
-                with open(log_file, "r") as csvfile:
-                    csvreader = csv.reader(csvfile, delimiter=',')
-                    # runtime_header = next(csvreader, None)
-                    for row in csvreader:
-                        ram_log_list.append(row)
-                _date = ram_log_list[0][0]
-                train_log_timedate_list= ram_log_list
-                for pattern in epoch_patterns:
-                    for list_items in train_log_timedate_list:
+                for pattern in ['training.log']:
                         # print('Looking for %s in "%s" ->' %(pattern,list_items))
-                        for text in list_items:
-                            if re.search(pattern, text):
+                            if re.search(pattern, str(file)):
                                 # print (f"Found match!\n{list_items}")
-                                match_list.append(text)
-                final_epoch_string = match_list[-1][12:]
-                tmp_var = final_epoch_string.split("/")
-                last_epoch = int(re.sub("[^0-9]", "", tmp_var[0]))
-                for list_element in match_list:
-                    # element_time_stamp = list_element[:12]
-                    epoch_string = list_element[12:]
-                    tmp_var = epoch_string.split("/")
-                    current_epoch = int(re.sub("[^0-9]", "", tmp_var[0]))
-                    if current_epoch != 0:
-                            previous_time_stamp = current_time_stamp
-                            current_time_stamp = list_element[:12]
-                            last_epoch_time = time.strptime(previous_time_stamp, "%H:%M:%S.%f")
-                            current_epoch_time = time.strptime(current_time_stamp, "%H:%M:%S.%f")
-                            epoch_train_time = (time.mktime(current_epoch_time) - time.mktime(last_epoch_time))/60
-                            # print (epoch_train_time)
-                            x_axis.append(epoch_train_time)
-                    else:
-                        # print("\n")
-                        current_time_stamp = list_element[:12]
+                                ram_log_list = []
+                                ram_rt_list = []
+                                ram_rt_datetime_struct = []
+                                match_list =[]
+                                train_log_timedate_list = []
+                                train_log_timedate_struct = []
+                                list_items = None
+                                list_element = None
+                                _item = None
+                                log_file = os.path.join(folder_path, file)
+                                with open(log_file, "r") as csvfile:
+                                    csvreader = csv.reader(csvfile, delimiter=',')
+                                    # runtime_header = next(csvreader, None)
+                                    for row in csvreader:
+                                        ram_log_list.append(row)
+                                _date = ram_log_list[0][0]
+                                train_log_timedate_list= ram_log_list
+                                for pattern in epoch_patterns:
+                                    for list_items in train_log_timedate_list:
+                                        # print('Looking for %s in "%s" ->' %(pattern,list_items))
+                                        for text in list_items:
+                                            if re.search(pattern, text):
+                                                # print (f"Found match!\n{list_items}")
+                                                match_list.append(text)
+                                final_epoch_string = match_list[-1][12:]
+                                tmp_var = final_epoch_string.split("/")
+                                last_epoch = int(re.sub("[^0-9]", "", tmp_var[0]))
+                                for list_element in match_list:
+                                    # element_time_stamp = list_element[:12]
+                                    epoch_string = list_element[12:]
+                                    tmp_var = epoch_string.split("/")
+                                    current_epoch = int(re.sub("[^0-9]", "", tmp_var[0]))
+                                    if current_epoch != 0:
+                                            new_day_pattern = '00:'
+                                            previous_day_pattern = '23:'
+                                            previous_time_stamp = current_time_stamp
+                                            current_time_stamp = list_element[:12]
 
-                    tmp_str = f'{_date} {list_element[:12]}'
-                    train_log_timedate_struct.append(time.strptime(tmp_str, "%Y-%m-%d %H:%M:%S.%f"))
-                for item in ram_runtime_values:
-                    ram_rt_list.append(item[:1])
-                    ram_rt_datetime_struct.append(time.strptime(item[0], "%Y-%m-%d %H:%M:%S.%f"))
-                i = bisect.bisect_left(ram_rt_datetime_struct, train_log_timedate_struct[-1])
-                runtime_ram = ram_runtime_values[i-1][1]
-                for index in range(last_epoch):
-                    y_axis.append(runtime_ram)
+                                            # Look if stringB is in stringA
+                                            match1 = re.search(new_day_pattern,current_time_stamp)
+                                            match2 = re.search(previous_day_pattern, previous_time_stamp)
+                                            if match1 and match2:
+                                                print('Skipping negative epoch train time...')
+                                            else:
+                                                last_epoch_time = time.strptime(previous_time_stamp, "%H:%M:%S.%f")
+                                                current_epoch_time = time.strptime(current_time_stamp, "%H:%M:%S.%f")
+                                                epoch_train_time = (time.mktime(current_epoch_time) - time.mktime(last_epoch_time))/60
+                                                
+                                                # print (epoch_train_time)
+                                                x_axis.append(epoch_train_time)
+                                    else:
+                                        # print("\n")
+                                        current_time_stamp = list_element[:12]
+
+                                    tmp_str = f'{_date} {list_element[:12]}'
+                                    train_log_timedate_struct.append(time.strptime(tmp_str, "%Y-%m-%d %H:%M:%S.%f"))
+                                for item in ram_runtime_values:
+                                    ram_rt_list.append(item[:1])
+                                    ram_rt_datetime_struct.append(time.strptime(item[0], "%Y-%m-%d %H:%M:%S.%f"))
+                                i = bisect.bisect_left(ram_rt_datetime_struct, train_log_timedate_struct[-1])
+                                runtime_ram = ram_runtime_values[i-1][1]
+                                for index in range(len(x_axis)):
+                                    y_axis.append(int(runtime_ram))
 
         epoch_df = pd.DataFrame(list(zip(y_axis, x_axis)), columns = ['RAM (MB)', 'Epoch Time'])
 
@@ -336,61 +350,75 @@ def epoch_plot (cpu_runtime_values = None, ram_runtime_values = None, model_name
             last_epoch_timedate_struct = []
             onlyfiles = [f for f in os.listdir(CPU_log_path) if os.path.isfile(os.path.join(CPU_log_path, f))]
             for file in os.listdir(folder_path):
-                cpu_log_list = []
-
-                cpu_rt_list = []
-                cpu_rt_datetime_struct = []
-                match_list =[]
-                train_log_timedate_list = []
-                train_log_timedate_struct = []
-                list_items = None
-                list_element = None
-                _item = None
-                log_file = os.path.join(folder_path, file)
-                with open(log_file, "r") as csvfile:
-                    csvreader = csv.reader(csvfile, delimiter=',')
-                    # runtime_header = next(csvreader, None)
-                    for row in csvreader:
-                        cpu_log_list.append(row)
-                _date = cpu_log_list[0][0]
-                train_log_timedate_list= cpu_log_list
-                for pattern in epoch_patterns:
-                    for list_items in train_log_timedate_list:
+                for pattern in ['training.log']:
                         # print('Looking for %s in "%s" ->' %(pattern,list_items))
-                        for text in list_items:
-                            if re.search(pattern, text):
+                            if re.search(pattern, str(file)):
                                 # print (f"Found match!\n{list_items}")
-                                match_list.append(text)
-                final_epoch_string = match_list[-1][12:]
-                tmp_var = final_epoch_string.split("/")
-                last_epoch = int(re.sub("[^0-9]", "", tmp_var[0]))
-                for list_element in match_list:
-                    # element_time_stamp = list_element[:12]
-                    epoch_string = list_element[12:]
-                    tmp_var = epoch_string.split("/")
-                    current_epoch = int(re.sub("[^0-9]", "", tmp_var[0]))
-                    if current_epoch != 0:
-                            previous_time_stamp = current_time_stamp
-                            current_time_stamp = list_element[:12]
-                            last_epoch_time = time.strptime(previous_time_stamp, "%H:%M:%S.%f")
-                            current_epoch_time = time.strptime(current_time_stamp, "%H:%M:%S.%f")
-                            epoch_train_time = (time.mktime(current_epoch_time) - time.mktime(last_epoch_time))/60
-                            # print (epoch_train_time)
-                            x_axis.append(epoch_train_time)
-                    else:
-                        # print("\n")
-                        current_time_stamp = list_element[:12]
+                                cpu_log_list = []
 
-                    tmp_str = f'{_date} {list_element[:12]}'
-                    train_log_timedate_struct.append(time.strptime(tmp_str, "%Y-%m-%d %H:%M:%S.%f"))
-                for item in cpu_runtime_values:
-                    cpu_rt_list.append(item[:1])
-                    cpu_rt_datetime_struct.append(time.strptime(item[0], "%Y-%m-%d %H:%M:%S.%f"))
-                i = bisect.bisect_left(cpu_rt_datetime_struct, train_log_timedate_struct[-1])
-                train_run_quota = cpu_runtime_values[i-1][1]
-                qttc = int(train_run_quota)/100000.0
-                for index in range(last_epoch):
-                    y_axis.append(qttc)
+                                cpu_rt_list = []
+                                cpu_rt_datetime_struct = []
+                                match_list =[]
+                                train_log_timedate_list = []
+                                train_log_timedate_struct = []
+                                list_items = None
+                                list_element = None
+                                _item = None
+                                log_file = os.path.join(folder_path, file)
+                                with open(log_file, "r") as csvfile:
+                                    csvreader = csv.reader(csvfile, delimiter=',')
+                                    # runtime_header = next(csvreader, None)
+                                    for row in csvreader:
+                                        cpu_log_list.append(row)
+                                _date = cpu_log_list[0][0]
+                                train_log_timedate_list= cpu_log_list
+                                for pattern in epoch_patterns:
+                                    for list_items in train_log_timedate_list:
+                                        # print('Looking for %s in "%s" ->' %(pattern,list_items))
+                                        for text in list_items:
+                                            if re.search(pattern, text):
+                                                # print (f"Found match!\n{list_items}")
+                                                match_list.append(text)
+                                final_epoch_string = match_list[-1][12:]
+                                tmp_var = final_epoch_string.split("/")
+                                last_epoch = int(re.sub("[^0-9]", "", tmp_var[0]))
+                                for list_element in match_list:
+                                    # element_time_stamp = list_element[:12]
+                                    epoch_string = list_element[12:]
+                                    tmp_var = epoch_string.split("/")
+                                    current_epoch = int(re.sub("[^0-9]", "", tmp_var[0]))
+                                    if current_epoch != 0:
+                                            new_day_pattern = '00:'
+                                            previous_day_pattern = '23:'
+                                            previous_time_stamp = current_time_stamp
+                                            current_time_stamp = list_element[:12]
+
+                                            # Look if stringB is in stringA
+                                            match1 = re.search(new_day_pattern,current_time_stamp)
+                                            match2 = re.search(previous_day_pattern, previous_time_stamp)
+                                            if match1 and match2:
+                                                print('Skipping negative epoch train time...')
+                                            else:
+                                                last_epoch_time = time.strptime(previous_time_stamp, "%H:%M:%S.%f")
+                                                current_epoch_time = time.strptime(current_time_stamp, "%H:%M:%S.%f")
+                                                epoch_train_time = (time.mktime(current_epoch_time) - time.mktime(last_epoch_time))/60
+                                                
+                                                # print (epoch_train_time)
+                                                x_axis.append(epoch_train_time)
+                                    else:
+                                        # print("\n")
+                                        current_time_stamp = list_element[:12]
+
+                                    tmp_str = f'{_date} {list_element[:12]}'
+                                    train_log_timedate_struct.append(time.strptime(tmp_str, "%Y-%m-%d %H:%M:%S.%f"))
+                                for item in cpu_runtime_values:
+                                    cpu_rt_list.append(item[:1])
+                                    cpu_rt_datetime_struct.append(time.strptime(item[0], "%Y-%m-%d %H:%M:%S.%f"))
+                                i = bisect.bisect_left(cpu_rt_datetime_struct, train_log_timedate_struct[-1])
+                                train_run_quota = cpu_runtime_values[i-1][1]
+                                qttc = int(train_run_quota)/100000.0
+                                for index in range(len(x_axis)):
+                                    y_axis.append(qttc)
 
         epoch_df = pd.DataFrame(list(zip(y_axis, x_axis)), columns = ['CPU (Cores)', 'Epoch Time'])
 
