@@ -14,7 +14,7 @@ function CPU_benchmark {
 
     for cpu_quota in $cpu_quota_values
     do
-    for i in {0..4..1}
+    for i in {0..2..1}
         do 
     #TODO: add docker monitor process kill
         echo "Dataset/Model:$2/$1"

@@ -36,13 +36,6 @@ function CPU_benchmark {
             kill -9 $PID
             break
         fi
-        if [ $lower_limit -eq $mem_limit ] || [ $lower_limit -gt $mem_limit ]; then
-            echo "Lower limit reached!"      
-            PIDS=$(ps -eaf)
-            PID=$(echo "$PIDS" | grep "docker_monitor.sh" | awk '{print $2}')
-            kill -9 $PID
-            break
-        fi
     done
     done
 }

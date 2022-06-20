@@ -99,6 +99,8 @@ def create_folder(model_name: str = None, dataset: str = None):
         memory_limit=None
 
     if "CPU_QUOTA" in os.environ:
+        CPU_log_folder = os.path.join(date_folder,"CPU_log")
+        folder_check(CPU_log_folder)
         cpu_quota=int(os.environ["CPU_QUOTA"])
         cpu_period=100000
         csv_header=["timedate", "cpu_quota", "parse_args()", "create_folder()","inference.init()", "inference.setup()", "inference.evaluate()"]

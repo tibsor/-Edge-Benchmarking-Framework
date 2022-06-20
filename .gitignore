@@ -16,3 +16,4 @@ MFPT_Fault_Data_Sets
 CWRU/
 Paderborn/
 src/init_env.txt
+src/train_main_ae.py

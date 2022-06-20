@@ -16,7 +16,7 @@ function RAM_benchmark {
     for memory_value in $memory_limit_values
     do
         mem_limit=$memory_value
-        for i in {0..2..1}
+        for i in {0..4..1}
             do 
             echo "Dataset/Model:$2/$1"
             echo "Starting benchmark container with $mem_limit MB memory limit"
@@ -53,7 +53,7 @@ select dataset in SEU MFPT CWRU; do
   case $dataset in
     SEU)
     select model in Alexnet1d Resnet1d CNN_1d LeNet1d BiLSTM1d Sae1d Ae1d MLP; do
-        CPU_benchmark $model $dataset
+        RAM_benchmark $model $dataset
         echo "C'est fini"
         #break
     break
@@ -61,7 +61,7 @@ select dataset in SEU MFPT CWRU; do
     ;;
     MFPT)
     select model in Alexnet1d Resnet1d CNN_1d LeNet1d BiLSTM1d Sae1d Ae1d MLP; do
-        CPU_benchmark $model $dataset
+        RAM_benchmark $model $dataset
         echo "C'est fini"
         #break
     done
@@ -72,7 +72,7 @@ select dataset in SEU MFPT CWRU; do
       ;;
     CWRU)
     select model in Alexnet1d Resnet1d CNN_1d LeNet1d BiLSTM1d; do
-        CPU_benchmark $model $dataset
+        RAM_benchmark $model $dataset
         echo "C'est fini"
         #break
     done

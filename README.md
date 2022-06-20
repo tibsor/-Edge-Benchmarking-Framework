@@ -46,7 +46,7 @@ Note that the name of the image (`bench_fw`) is important, as it will be require
 
 IMPORTANT: The python script running inside the container requires a `MEM_LIMIT` or `CPU_QUOTA` environment value in order to properly write on the shared volume data.
 
-4. Create a local python env with the `plot_env.txt` file and run the `seaborn_plot.py` to see get total runtime plots as well as time-per-epoch plots.
+4. Create a local python env with the `plot_env.txt` file and then [activate it](https://docs.python.org/3/tutorial/venv.html). Afterwards, run the `seaborn_plot.py` to see get total runtime plots as well as time-per-epoch plots.
 ## Description
 At the moment, given the image built from the present Dockerfile, the container will run either an inference observation or a complete training process. 
 
@@ -57,10 +57,10 @@ There is a `docker_monitor.sh` that runs the `docker stats` command and saves th
 ## Roadmap
 - [x] check function peak memory usage - partly done - plots next
 - [x] add CPU benchmarking 
-- [x]create shared volume to be used by both inference & train benchmark
-- [x]add other model types and compare memory usage results
-- [x]add other datasets
-- [ ]analyze `--memory-swap` option (benefits/drawbacks)
+- [x] create shared volume to be used by both inference & train benchmark
+- [x] add other model types and compare memory usage results
+- [x] add other datasets
+- [ ] analyze `--memory-swap` option (benefits/drawbacks)
 
 
 ## License

@@ -9,9 +9,10 @@ import csv
 import re
 import time
 import bisect
-#sns.set_theme(style="darkgrid")
+
 
 def init():
+    train_flag = False
     cwd = os.getcwd()
     cpu_values_list = None
     memory_values_list = None
@@ -28,6 +29,7 @@ def init():
     model_dir = os.path.join(model_folders,model_name)
     plot_selection = questionary.select("Train or inference:", choices=["train", "inference"]).ask()
     if plot_selection == "train":
+        train_flag = True
         cpu_values_file = os.path.join(model_dir, train_cpu_file_name)
         memory_values_file = os.path.join(model_dir, train_memory_file_name)    
     else:
@@ -48,42 +50,13 @@ def init():
             for row in csvreader:
                 memory_values_list.append(row)
 
-    # date_dir = questionary.select("Select date:", choices=os.listdir(model_dir)).ask()
-    # logs_dir = os.path.join(model_dir,date_dir)
-    # RAM_log_path = os.path.join (logs_dir,'RAM_log')
-    # CPU_log_path = os.path.join(logs_dir, 'CPU_log')
-
-    # RAM_log_flag = folder_check(RAM_log_path)
-    # CPU_log_flag = folder_check(CPU_log_path)
-
-    # if RAM_log_flag:
-    #     ram_log_list = []
-    #     for file in os.listdir(RAM_log_path):
-    #         log_file = os.path.join(RAM_log_path, file)
-    #         with open(log_file, "r") as csvfile:
-    #             csvreader = csv.reader(csvfile, delimiter=',')
-    #             # runtime_header = next(csvreader, None)
-    #             for row in csvreader:
-    #                 ram_log_list.append(row)
-    # else: ram_log_list = None
-
-    # if CPU_log_flag:
-    #     cpu_log_list = []
-    #     for file in os.listdir(CPU_log_path):
-    #         log_file = os.path.join(CPU_log_path, file)
-    #         with open(log_file, "r") as csvfile:
-    #             csvreader = csv.reader(csvfile, delimiter=',')
-    #             # runtime_header = next(csvreader, None)
-    #             for row in csvreader:
-    #                 cpu_log_list.append(row)
-
     else: cpu_log_list = None
     if cpu_values_list != None and memory_values_list != None:
-        return cpu_values_list, memory_values_list, model_name, dataset_name
+        return cpu_values_list, memory_values_list, model_name, dataset_name, train_flag
     elif cpu_values_list != None:
-        return cpu_values_list, None, model_name, dataset_name
+        return cpu_values_list, None, model_name, dataset_name, train_flag
     elif memory_values_list != None:
-        return None,memory_values_list, model_name, dataset_name
+        return None,memory_values_list, model_name, dataset_name, train_flag
     else: return None,None, model_name, dataset_name
 
 
@@ -109,7 +82,7 @@ def file_check(file_path: str = None):
     else:
         return False
 
-def single_plots(x_axis: list = None, x1_axis: list = None, y_axis: list = None, model_name: str = None, dataset_name: str = None, RAM_flag: bool = False, CPU_flag: bool = False):
+def single_plots(x_axis: list = None, x1_axis: list = None, y_axis: list = None, model_name: str = None, dataset_name: str = None, RAM_flag: bool = False, CPU_flag: bool = False, train_flag: bool = False):
     cwd = os.getcwd()
     args_time_list=[]
     init_time_list=[]
@@ -163,20 +136,36 @@ def single_plots(x_axis: list = None, x1_axis: list = None, y_axis: list = None,
         ax5 = sns.relplot(x="RAM (MB)", y="Eval Time", kind="line", data=eval_df, ci=90, markers=True, dashes=False)
         ax6 = sns.relplot(x="RAM (MB)", y="Total Time", kind="line", data=total_df, ci=90, markers=True, dashes=False)
         
-        ax1.fig.suptitle(f"Model: {model_name}/Dataset: {dataset_name}\nRAM vs Args Time")
-        ax2.fig.suptitle(f"Model: {model_name}/Dataset: {dataset_name}\nRAM vs Create Folder Time")
-        ax3.fig.suptitle(f"Model: {model_name}/Dataset: {dataset_name}\nRAM vs Init Time")
-        ax4.fig.suptitle(f"Model: {model_name}/Dataset: {dataset_name}\nRAM vs Setup Time")
-        ax5.fig.suptitle(f"Model: {model_name}/Dataset: {dataset_name}\nRAM vs Eval Time")
-        ax6.fig.suptitle(f"Model: {model_name}/Dataset: {dataset_name}\nRAM vs Total Time")
-        plots_path = os.path.join(plots_path, "RAM Results")
-        folder_create(plots_path)
-        ax1.savefig(f'{plots_path}/{date_now}_RAM_1.png')
-        ax2.savefig(f'{plots_path}/{date_now}_RAM_2.png')
-        ax3.savefig(f'{plots_path}/{date_now}_RAM_3.png')
-        ax4.savefig(f'{plots_path}/{date_now}_RAM_4.png')
-        ax5.savefig(f'{plots_path}/{date_now}_RAM_5.png')
-        ax6.savefig(f'{plots_path}/{date_now}_RAM_6.png')
+        if train_flag:
+            ax1.fig.suptitle(f"Model: {model_name}/Dataset: {dataset_name}\nRAM vs Train Args Time")
+            ax2.fig.suptitle(f"Model: {model_name}/Dataset: {dataset_name}\nRAM vs Train Create Folder Time")
+            ax3.fig.suptitle(f"Model: {model_name}/Dataset: {dataset_name}\nRAM vs Train Init Time")
+            ax4.fig.suptitle(f"Model: {model_name}/Dataset: {dataset_name}\nRAM vs Train Setup Time")
+            ax5.fig.suptitle(f"Model: {model_name}/Dataset: {dataset_name}\nRAM vs Train Eval Time")
+            ax6.fig.suptitle(f"Model: {model_name}/Dataset: {dataset_name}\nRAM vs Train Total Time")
+            plots_path = os.path.join(plots_path, "RAM Results")
+            folder_create(plots_path)
+            ax1.savefig(f'{plots_path}/{date_now}_Train_RAM_1.png')
+            ax2.savefig(f'{plots_path}/{date_now}_Train_RAM_2.png')
+            ax3.savefig(f'{plots_path}/{date_now}_Train_RAM_3.png')
+            ax4.savefig(f'{plots_path}/{date_now}_Train_RAM_4.png')
+            ax5.savefig(f'{plots_path}/{date_now}_Train_RAM_5.png')
+            ax6.savefig(f'{plots_path}/{date_now}_Train_RAM_6.png')
+        else:
+            ax1.fig.suptitle(f"Model: {model_name}/Dataset: {dataset_name}\nRAM vs Inference Args Time")
+            ax2.fig.suptitle(f"Model: {model_name}/Dataset: {dataset_name}\nRAM vs Inference Create Folder Time")
+            ax3.fig.suptitle(f"Model: {model_name}/Dataset: {dataset_name}\nRAM vs Inference Init Time")
+            ax4.fig.suptitle(f"Model: {model_name}/Dataset: {dataset_name}\nRAM vs Inference Setup Time")
+            ax5.fig.suptitle(f"Model: {model_name}/Dataset: {dataset_name}\nRAM vs Inference Eval Time")
+            ax6.fig.suptitle(f"Model: {model_name}/Dataset: {dataset_name}\nRAM vs Inference Total Time")
+            plots_path = os.path.join(plots_path, "RAM Results")
+            folder_create(plots_path)
+            ax1.savefig(f'{plots_path}/{date_now}_Inference_RAM_1.png')
+            ax2.savefig(f'{plots_path}/{date_now}_Inference_RAM_2.png')
+            ax3.savefig(f'{plots_path}/{date_now}_Inference_RAM_3.png')
+            ax4.savefig(f'{plots_path}/{date_now}_Inference_RAM_4.png')
+            ax5.savefig(f'{plots_path}/{date_now}_Inference_RAM_5.png')
+            ax6.savefig(f'{plots_path}/{date_now}_Inference_RAM_6.png')
     if CPU_flag:
         args_df = pd.DataFrame(list(zip(y_axis, args_time_list)), columns = ['CPU Cores', 'Args Time'])
         folder_df = pd.DataFrame(list(zip(y_axis, create_folder_list)), columns = ['CPU Cores', 'Create Folder Time'])
@@ -192,22 +181,40 @@ def single_plots(x_axis: list = None, x1_axis: list = None, y_axis: list = None,
         ax5 = sns.relplot(x="CPU Cores", y="Eval Time", kind="line", data=eval_df, ci=90, markers=True, dashes=False)
         ax6 = sns.relplot(x="CPU Cores", y="Total Time", kind="line", data=total_df, ci=90, markers=True, dashes=False)
 
-        ax1.fig.suptitle(f"{model_name}/{dataset_name}\nCPU Cores vs Args Time")
-        ax2.fig.suptitle(f"{model_name}/{dataset_name}\nCPU Cores vs Create Folder Time")
-        ax3.fig.suptitle(f"{model_name}/{dataset_name}\nCPU Cores vs Init Time")
-        ax4.fig.suptitle(f"{model_name}/{dataset_name}\nCPU Cores vs Setup Time")
-        ax5.fig.suptitle(f"{model_name}/{dataset_name}\nCPU Cores vs Eval Time")
-        ax6.fig.suptitle(f"{model_name}/{dataset_name}\nCPU Cores vs Total Time")
+        if train_flag:
+            ax1.fig.suptitle(f"{model_name}/{dataset_name}\nCPU Cores vs Train Args Time")
+            ax2.fig.suptitle(f"{model_name}/{dataset_name}\nCPU Cores vs Train Create Folder Time")
+            ax3.fig.suptitle(f"{model_name}/{dataset_name}\nCPU Cores vs Train Init Time")
+            ax4.fig.suptitle(f"{model_name}/{dataset_name}\nCPU Cores vs Train Setup Time")
+            ax5.fig.suptitle(f"{model_name}/{dataset_name}\nCPU Cores vs Train Eval Time")
+            ax6.fig.suptitle(f"{model_name}/{dataset_name}\nCPU Cores vs Train Total Time")
 
-        plots_path = os.path.join(plots_path, "CPU Results")
-        folder_create(plots_path)
+            plots_path = os.path.join(plots_path, "CPU Results")
+            folder_create(plots_path)
 
-        ax1.savefig(f'{plots_path}/{date_now}_CPU_1.png')
-        ax2.savefig(f'{plots_path}/{date_now}_CPU_2.png')
-        ax3.savefig(f'{plots_path}/{date_now}_CPU_3.png')
-        ax4.savefig(f'{plots_path}/{date_now}_CPU_4.png')
-        ax5.savefig(f'{plots_path}/{date_now}_CPU_5.png')
-        ax6.savefig(f'{plots_path}/{date_now}_CPU_6.png')
+            ax1.savefig(f'{plots_path}/{date_now}_Train_CPU_1.png')
+            ax2.savefig(f'{plots_path}/{date_now}_Train_CPU_2.png')
+            ax3.savefig(f'{plots_path}/{date_now}_Train_CPU_3.png')
+            ax4.savefig(f'{plots_path}/{date_now}_Train_CPU_4.png')
+            ax5.savefig(f'{plots_path}/{date_now}_Train_CPU_5.png')
+            ax6.savefig(f'{plots_path}/{date_now}_Train_CPU_6.png')
+        else:
+            ax1.fig.suptitle(f"{model_name}/{dataset_name}\nCPU Cores vs Inference Args Time")
+            ax2.fig.suptitle(f"{model_name}/{dataset_name}\nCPU Cores vs Inference Create Folder Time")
+            ax3.fig.suptitle(f"{model_name}/{dataset_name}\nCPU Cores vs Inference Init Time")
+            ax4.fig.suptitle(f"{model_name}/{dataset_name}\nCPU Cores vs Inference Setup Time")
+            ax5.fig.suptitle(f"{model_name}/{dataset_name}\nCPU Cores vs Inference Eval Time")
+            ax6.fig.suptitle(f"{model_name}/{dataset_name}\nCPU Cores vs Inference Total Time")
+
+            plots_path = os.path.join(plots_path, "CPU Results")
+            folder_create(plots_path)
+
+            ax1.savefig(f'{plots_path}/{date_now}_Inference_CPU_1.png')
+            ax2.savefig(f'{plots_path}/{date_now}_Inference_CPU_2.png')
+            ax3.savefig(f'{plots_path}/{date_now}_Inference_CPU_3.png')
+            ax4.savefig(f'{plots_path}/{date_now}_Inference_CPU_4.png')
+            ax5.savefig(f'{plots_path}/{date_now}_Inference_CPU_5.png')
+            ax6.savefig(f'{plots_path}/{date_now}_Inference_CPU_6.png')
 
 def epoch_plot (cpu_runtime_values = None, ram_runtime_values = None, model_name: str = None, dataset_name: str = None):    
     cwd = os.getcwd()
@@ -310,12 +317,12 @@ def epoch_plot (cpu_runtime_values = None, ram_runtime_values = None, model_name
                 for index in range(last_epoch):
                     y_axis.append(runtime_ram)
 
-            epoch_df = pd.DataFrame(list(zip(y_axis, x_axis)), columns = ['RAM (MB)', 'Epoch Time'])
+        epoch_df = pd.DataFrame(list(zip(y_axis, x_axis)), columns = ['RAM (MB)', 'Epoch Time'])
 
-            ax1 = sns.relplot(x="RAM (MB)", y="Epoch Time", data=epoch_df, kind='line', ci=90,markers=True, dashes=False)
-            ax1.fig.suptitle(f"{model_name}/{dataset_name}\nRAM (MB) vs Epoch Time")
+        ax1 = sns.relplot(x="RAM (MB)", y="Epoch Time", data=epoch_df, kind='line', ci=90,markers=True, dashes=False)  
+        ax1.fig.suptitle(f"{model_name}/{dataset_name}\nRAM (MB) vs Epoch Time (Minutes)")
 
-            ax1.savefig(f'{plots_path}/{date_now}_RAM_epoch.png')
+        ax1.savefig(f'{plots_path}/{date_now}_RAM_epoch.png')
     # else: ram_log_list = None
     
     if CPU_log_flag:
@@ -385,12 +392,12 @@ def epoch_plot (cpu_runtime_values = None, ram_runtime_values = None, model_name
                 for index in range(last_epoch):
                     y_axis.append(qttc)
 
-            epoch_df = pd.DataFrame(list(zip(y_axis, x_axis)), columns = ['CPU (Cores)', 'Epoch Time'])
+        epoch_df = pd.DataFrame(list(zip(y_axis, x_axis)), columns = ['CPU (Cores)', 'Epoch Time'])
 
-            ax1 = sns.relplot(x="CPU (Cores)", y="Epoch Time", data=epoch_df, kind='line', ci=90,markers=True, dashes=False)
-            ax1.fig.suptitle(f"{model_name}/{dataset_name}\nCPU Cores vs Epoch Time")
+        ax1 = sns.relplot(x="CPU (Cores)", y="Epoch Time", data=epoch_df, kind='line', ci=90,markers=True, dashes=False)
+        ax1.fig.suptitle(f"{model_name}/{dataset_name}\nCPU Cores vs Epoch Time (Minutes)")
 
-            ax1.savefig(f'{plots_path}/{date_now}_CPU_epoch.png')
+        ax1.savefig(f'{plots_path}/{date_now}_CPU_epoch.png')
 
             # elif max_epoch_counter == 0:
         #     raise ValueError("Could not calculate epoch!")
@@ -399,9 +406,10 @@ def epoch_plot (cpu_runtime_values = None, ram_runtime_values = None, model_name
 
 
 if __name__=="__main__":
+    train_flag = False
     cpu_values_list = None
     memory_values_list = None
-    cpu_values_list, memory_values_list, model_name, dataset_name = init()
+    cpu_values_list, memory_values_list, model_name, dataset_name, train_flag = init()
     time_sum=0.0
 
     RAM_limit_list=[]
@@ -420,7 +428,7 @@ if __name__=="__main__":
                 time_sum+=float(function_time)
             total_time_list.append(time_sum)
             time_sum=0.0
-        # single_plots(function_time_list, total_time_list, RAM_limit_list, model_name, dataset_name, RAM_flag, CPU_flag)    
+        single_plots(function_time_list, total_time_list, RAM_limit_list, model_name, dataset_name, RAM_flag, CPU_flag, train_flag)    
     else: print("No memory file found!")
     if cpu_values_list != None:
         CPU_flag=True
@@ -431,125 +439,12 @@ if __name__=="__main__":
             CPU_qttc= float(runtime_list[1])/100000.0 # convert cpu quota to cpu cores for easier interpretation
             CPU_limit_list.append(float(CPU_qttc))
             for function_time in runtime_list[2:]:
-            #print(time)
                 function_time_list.append(float(function_time))
                 time_sum+=float(function_time)
             total_time_list.append(time_sum)
             time_sum=0.0
-        # single_plots(function_time_list, total_time_list, CPU_limit_list, model_name, dataset_name, RAM_flag, CPU_flag)
+        single_plots(function_time_list, total_time_list, CPU_limit_list, model_name, dataset_name, RAM_flag, CPU_flag, train_flag)
     else: print("No CPU file found!")
-    
-    epoch_plot(cpu_runtime_values=cpu_values_list, ram_runtime_values=memory_values_list, model_name=model_name, dataset_name=dataset_name)
-    # elif cpu_log_list != None:
-    #     epoch_plot(cpu_log_list=cpu_log_list, ram_log_list=None, model_name=model_name, dataset_name=dataset_name)
-    # elif ram_log_list != None:
-    #     epoch_plot(cpu_log_list=None, ram_log_list=ram_log_list, model_name=model_name, dataset_name=dataset_name)
-
-    # #plt.show()
+    if train_flag:
+        epoch_plot(cpu_runtime_values=cpu_values_list, ram_runtime_values=memory_values_list, model_name=model_name, dataset_name=dataset_name)
     print ("Script ran sucessfully!")
-
-
-# def main_plot(x_axis: list = None, x1_axis: list = None, y_axis: list = None, model_name: str = None, dataset_name: str = None, RAM_flag: bool = False, CPU_flag: bool = False):
-#     cwd = os.getcwd()
-#     args_time_list=[]
-#     init_time_list=[]
-#     setup_time_list=[]
-#     eval_time_list=[]
-#     create_folder_list=[]
-    
-#     plots_folder = os.path.join(cwd,'plots')
-#     folder_create(plots_folder)
-    
-#     model_folder = os.path.join(plots_folder, model_name)
-#     folder_create(model_folder)
-    
-#     dataset_folder = os.path.join(model_folder, dataset_name)
-#     folder_create(dataset_folder)
-    
-#     plots_path=os.path.join(plots_folder, model_name, dataset_name)
-#     folder_create(plots_path)
-    
-#     total_time=0.0
-#     for index,i in enumerate(x_axis):
-#         total_time+=i
-#         if index%5==0:
-#             args_time_list.append(i)
-#         elif index%5==1:
-#             create_folder_list.append(i)
-#         elif index%5==2:
-#             init_time_list.append(i)
-#         elif index%5==3:
-#             setup_time_list.append(i)
-#         elif index%5==4:
-#             eval_time_list.append(i)
-#     date_now = datetime.date.today()
-
-
-
-
-
-
-
-    # current_time_stamp = None
-    # cpu_log_timestamp_list = []
-    # if cpu_log_dict != {}:
-    #     for _key, _value in cpu_log_dict.items():
-    #         for i in range(len(_value)):
-    #         # tmp_key = key
-    #         # cpu_log_date_stamp = tmp_key.replace("_", "-")
-    #             cpu_log_timestamp_list.append(time.strptime(f'{_key} {_value[i][0]}', "%Y_%m_%d"))
-    #         ##### DATE MATCHING ######
-    #         cpu_log_date_stamp = time.strptime(_key, "%Y_%m_%d")
-    #         for stamp_element in cpu_runtime_values:
-    #             runtime_stamp = stamp_element[0]
-    #             rt_date_stamp = runtime_stamp[:10]
-    #             rt_date_stamp = time.strptime(rt_date_stamp, "%Y-%m-%d")
-    #             ##### DATE MATCHING END######
-    #             if cpu_log_date_stamp == rt_date_stamp:
-    #                 ##### TIME MATCHING #####
-    #                 for log_element in cpu_log_dict[_key]:
-    #                     if log_element != []:
-    #                         log_element.pop(0)
-    #                     else: break
-    #                     for pattern in epoch_patterns:
-    #                         for list_item in log_element:
-    #                             print('Looking for %s in "%s" ->' %(pattern,list_item))
-    #                             if re.search(pattern, list_item):
-    #                                 print (f"Found match!\n{list_item}")
-    #                                 match_list.append(list_item)
-
-    #             #runtime_stamp = time.strptime(runtime_stamp[11:], "%H:%M:%S.%f")
-    #             #time_difference = (time.mktime(current_epoch_time) - time.mktime(runtime_stamp))/60
-    #         cpu_time_stamp_list = []
-    #         for stamp_element in cpu_runtime_values:
-    #             _time_stamp = stamp_element[0][11:]
-    #             cpu_time_stamp_list.append(time.strptime(_time_stamp,"%H:%M:%S.%f"))
-
-    #         epoch_list = []
-    #         epoch_train_time_list = []
-
-    #         cpu_quota_list = []
-    #         for list_element in match_list:
-    #             element_time_stamp = list_element[:12]
-    #             epoch_string = list_element[12:]
-    #             epoch_list.append(epoch_string)
-    #             tmp_var = epoch_string.split("/")
-    #             current_epoch = int(re.sub("[^0-9]", "", tmp_var[0]))
-    #             if current_epoch != 0:
-    #                     previous_time_stamp = current_time_stamp
-    #                     current_time_stamp = list_element[0:12]
-    #                     last_epoch_time = time.strptime(previous_time_stamp, "%H:%M:%S.%f")
-    #                     current_epoch_time = time.strptime(current_time_stamp, "%H:%M:%S.%f")
-    #                     epoch_train_time = (time.mktime(current_epoch_time) - time.mktime(last_epoch_time))/60
-    #                     print (epoch_train_time)
-    #                     epoch_train_time_list.append(epoch_train_time)
-    #             else:
-    #                 print ("\n")
-    #                 #previous_time_stamp = None
-    #                 if list_element != match_list[0]:
-    #                     max_epoch = current_epoch
-    #                     i = bisect.bisect_left(cpu_time_stamp_list, time.strptime(current_time_stamp, "%H:%M:%S.%f"))
-    #                     #log_time_stamp_list.append(time.strptime(current_time_stamp, "%H:%M:%S.%f"))
-    #                     cpu_quota_list.append(cpu_values_list[i-1][1])
-    #                 current_time_stamp = list_element[:12]
-
