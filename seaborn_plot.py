@@ -223,6 +223,8 @@ def epoch_plot (cpu_runtime_values = None, ram_runtime_values = None, model_name
     dataset_folder = os.path.join(model_folder, dataset_name)
     folder_create(dataset_folder)
     date_now = datetime.date.today()
+ 
+
 
     date_folder = os.path.join(dataset_folder, str(date_now))
     folder_create(date_folder)
@@ -232,31 +234,29 @@ def epoch_plot (cpu_runtime_values = None, ram_runtime_values = None, model_name
 
     date_now = datetime.date.today()
     logs_dir = f'{cwd}/host_data/{dataset_name}/{model_name}/'
-    date_folders = os.listdir(logs_dir)
-    date_folders = [folders for folders in date_folders if not folders.endswith('.csv')]
-    date_folders.sort()
+    
+    RAM_log_path = os.path.join (logs_dir,'RAM_log')
+    CPU_log_path = os.path.join(logs_dir, 'CPU_log')
+    RAM_log_flag = folder_check(RAM_log_path)
+    CPU_log_flag = folder_check(CPU_log_path)
+    # RAM_folders = [folders for folders in RAM_folders if not folders.endswith('.csv')]
 
     quota_epoch_list = []
     cpu_log_dict = {}
     ram_log_dict = {}
     big_boy_epoch_list_cpu = []
-    for folder in date_folders:
-        folder_path = os.path.join(logs_dir, folder)
+    if RAM_log_flag:
+        RAM_folders = os.listdir(RAM_log_path)
+        RAM_folders.sort()
+        x_axis = []
+        y_axis = []
+        for folder in RAM_folders:
+            folder_path = os.path.join(RAM_log_path, folder)
 
-        RAM_log_path = os.path.join (folder_path,'RAM_log')
-        CPU_log_path = os.path.join(folder_path, 'CPU_log')
 
-        RAM_log_flag = folder_check(RAM_log_path)
-        CPU_log_flag = folder_check(CPU_log_path)
-
-        if RAM_log_flag:
-            x_axis = []
-            y_axis = []
             last_epoch_timedate_struct = []
-            onlyfiles = [f for f in os.listdir(CPU_log_path) if os.path.isfile(os.path.join(CPU_log_path, f))]
-            for file in os.listdir(RAM_log_path):
+            for file in os.listdir(folder_path):
                 ram_log_list = []
-
                 ram_rt_list = []
                 ram_rt_datetime_struct = []
                 match_list =[]
@@ -265,14 +265,14 @@ def epoch_plot (cpu_runtime_values = None, ram_runtime_values = None, model_name
                 list_items = None
                 list_element = None
                 _item = None
-                log_file = os.path.join(RAM_log_path, file)
+                log_file = os.path.join(folder_path, file)
                 with open(log_file, "r") as csvfile:
                     csvreader = csv.reader(csvfile, delimiter=',')
                     # runtime_header = next(csvreader, None)
                     for row in csvreader:
-                        cpu_log_list.append(row)
-                _date = cpu_log_list[0][0]
-                train_log_timedate_list= cpu_log_list
+                        ram_log_list.append(row)
+                _date = ram_log_list[0][0]
+                train_log_timedate_list= ram_log_list
                 for pattern in epoch_patterns:
                     for list_items in train_log_timedate_list:
                         # print('Looking for %s in "%s" ->' %(pattern,list_items))
@@ -294,37 +294,41 @@ def epoch_plot (cpu_runtime_values = None, ram_runtime_values = None, model_name
                             last_epoch_time = time.strptime(previous_time_stamp, "%H:%M:%S.%f")
                             current_epoch_time = time.strptime(current_time_stamp, "%H:%M:%S.%f")
                             epoch_train_time = (time.mktime(current_epoch_time) - time.mktime(last_epoch_time))/60
-                            print (epoch_train_time)
+                            # print (epoch_train_time)
                             x_axis.append(epoch_train_time)
                     else:
-                        print("\n")
+                        # print("\n")
                         current_time_stamp = list_element[:12]
 
                     tmp_str = f'{_date} {list_element[:12]}'
                     train_log_timedate_struct.append(time.strptime(tmp_str, "%Y-%m-%d %H:%M:%S.%f"))
-                for item in cpu_runtime_values:
-                    cpu_rt_list.append(item[:1])
-                    cpu_rt_datetime_struct.append(time.strptime(item[0], "%Y-%m-%d %H:%M:%S.%f"))
-                i = bisect.bisect_left(cpu_rt_datetime_struct, train_log_timedate_struct[-1])
-                train_run_quota = cpu_runtime_values[i-1][1]
-                qttc = int(train_run_quota)/100000.0
+                for item in ram_runtime_values:
+                    ram_rt_list.append(item[:1])
+                    ram_rt_datetime_struct.append(time.strptime(item[0], "%Y-%m-%d %H:%M:%S.%f"))
+                i = bisect.bisect_left(ram_rt_datetime_struct, train_log_timedate_struct[-1])
+                runtime_ram = ram_runtime_values[i-1][1]
                 for index in range(last_epoch):
-                    y_axis.append(qttc)
+                    y_axis.append(runtime_ram)
 
-            epoch_df = pd.DataFrame(list(zip(y_axis, x_axis)), columns = ['CPU (Cores)', 'Epoch Time'])
+            epoch_df = pd.DataFrame(list(zip(y_axis, x_axis)), columns = ['RAM (MB)', 'Epoch Time'])
 
-            ax1 = sns.relplot(x="CPU (Cores)", y="Epoch Time", data=epoch_df, kind='line', ci=90,markers=True, dashes=False)
-            ax1.fig.suptitle(f"{model_name}/{dataset_name}\nCPU Cores vs Epoch Time")
+            ax1 = sns.relplot(x="RAM (MB)", y="Epoch Time", data=epoch_df, kind='line', ci=90,markers=True, dashes=False)
+            ax1.fig.suptitle(f"{model_name}/{dataset_name}\nRAM (MB) vs Epoch Time")
 
-            ax1.savefig(f'{plots_path}/{date_now}_CPU_epoch.png')
-        # else: ram_log_list = None
+            ax1.savefig(f'{plots_path}/{date_now}_RAM_epoch.png')
+    # else: ram_log_list = None
+    
+    if CPU_log_flag:
+        CPU_folders = os.listdir(CPU_log_path)
+        x_axis = []
+        y_axis = []
+        for folder in CPU_folders:
+            folder_path = os.path.join(CPU_log_path, folder)
 
-        if CPU_log_flag:
-            x_axis = []
-            y_axis = []
+
             last_epoch_timedate_struct = []
             onlyfiles = [f for f in os.listdir(CPU_log_path) if os.path.isfile(os.path.join(CPU_log_path, f))]
-            for file in os.listdir(CPU_log_path):
+            for file in os.listdir(folder_path):
                 cpu_log_list = []
 
                 cpu_rt_list = []
@@ -335,7 +339,7 @@ def epoch_plot (cpu_runtime_values = None, ram_runtime_values = None, model_name
                 list_items = None
                 list_element = None
                 _item = None
-                log_file = os.path.join(CPU_log_path, file)
+                log_file = os.path.join(folder_path, file)
                 with open(log_file, "r") as csvfile:
                     csvreader = csv.reader(csvfile, delimiter=',')
                     # runtime_header = next(csvreader, None)
@@ -364,10 +368,10 @@ def epoch_plot (cpu_runtime_values = None, ram_runtime_values = None, model_name
                             last_epoch_time = time.strptime(previous_time_stamp, "%H:%M:%S.%f")
                             current_epoch_time = time.strptime(current_time_stamp, "%H:%M:%S.%f")
                             epoch_train_time = (time.mktime(current_epoch_time) - time.mktime(last_epoch_time))/60
-                            print (epoch_train_time)
+                            # print (epoch_train_time)
                             x_axis.append(epoch_train_time)
                     else:
-                        print("\n")
+                        # print("\n")
                         current_time_stamp = list_element[:12]
 
                     tmp_str = f'{_date} {list_element[:12]}'

@@ -1,4 +1,5 @@
 #!/bin/bash
+
 function CPU_benchmark {
     CURRENT_DIR=$(pwd)
     echo "Current working directory:$CURRENT_DIR"
@@ -23,19 +24,43 @@ function CPU_benchmark {
         do 
     #TODO: add docker monitor process kill
         echo "Dataset/Model:$2/$1"
-        echo "Starting inference container with CPU quota $cpu_quota"
+        echo "Starting benchmark container with CPU quota $cpu_quota"
 
         docker run --rm -it -e CPU_QUOTA="$cpu_quota" --memory="2048m" --cpu-period="100000" --cpu-quota="$cpu_quota" -v $CURRENT_DIR/host_data:/benchmark/volume_data bench_fw:latest python3 train_main.py --model_name $1 --data_name $2 --normalizetype mean-std --processing_type O_A --max_epoch 10 --middle_epoch 10
+        run_output=$?
+        echo "Run finished! Clean-up..."
+        if [ $run_output -eq 0 ]; then 
+            echo "Container return value: $run_output"
+            echo "Container ran succesfully!"
+            sleep 2
+        elif [ $run_output -eq 137 ]; then # 137 error in Python is OOM
+            echo "Container return value: $run_output"
+            echo "Container failed to run!"
+            echo "Reason: excessive memory usage"
+            PIDS=$(ps -eaf)
+            PID=$(echo "$PIDS" | grep "docker_monitor.sh" | awk '{print $2}')
+            kill -9 $PID
+            break
+        fi
+        if [ $lower_limit -eq $mem_limit ] || [ $lower_limit -gt $mem_limit ]; then
+            echo "Lower limit reached!"      
+            PIDS=$(ps -eaf)
+            PID=$(echo "$PIDS" | grep "docker_monitor.sh" | awk '{print $2}')
+            kill -9 $PID
+            break
+        fi
     done
     done
 }
 
+
+
 PS3="Select the dataset/model combination: "
 echo $benchmark
-select dataset in SEU MFPT; do
+select dataset in SEU MFPT CWRU; do
   case $dataset in
     SEU)
-    select model in MLP Alexnet1d Resnet1d CNN_1d LeNet1d Sae1d Ae1d; do
+    select model in Alexnet1d Resnet1d CNN_1d LeNet1d BiLSTM1d Sae1d Ae1d MLP; do
         CPU_benchmark $model $dataset
         echo "C'est fini"
         #break
@@ -43,7 +68,7 @@ select dataset in SEU MFPT; do
     done
     ;;
     MFPT)
-    select model in  MLP Alexnet1d Resnet1d CNN_1d LeNet1d; do
+    select model in Alexnet1d Resnet1d CNN_1d LeNet1d BiLSTM1d Sae1d Ae1d MLP; do
         CPU_benchmark $model $dataset
         echo "C'est fini"
         #break
@@ -53,6 +78,18 @@ select dataset in SEU MFPT; do
     quit)
     break
       ;;
+    CWRU)
+    select model in Alexnet1d Resnet1d CNN_1d LeNet1d BiLSTM1d; do
+        CPU_benchmark $model $dataset
+        echo "C'est fini"
+        #break
+    done
+    break
+    ;;
+    quit)
+    break
+      ;;
+    
     *) 
     echo "Invalid option $REPLY"
       ;;

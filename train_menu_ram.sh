@@ -23,12 +23,11 @@ function RAM_benchmark {
     for memory_value in $memory_limit_values
     do
         mem_limit=$memory_value
-        mem_reserve=`echo "$memory_value/2" | bc`
         #docker run -it --memory="${mem_limit}m" --memory-reservation="${mem_reserve}m" --memory-swap=256m inf_bench:latest python3 main.py  --model_name MLP --data_name SEU --data_dir /inference/Mechanical-datasets --normlizetype mean-std --processing_type O_A --checkpoint_dir /inference/checkpoint
-        for i in {0..4..1}
+        for i in {0..2..1}
             do 
             echo "Dataset/Model:$2/$1"
-            echo "Starting container with $mem_reserve MB memory reserve and $mem_limit MB memory limit"
+            echo "Starting benchmark container with $mem_limit MB memory limit"
             docker run --rm -it -e MEM_LIMIT="$mem_limit" --memory="${mem_limit}m" --cpus="1.0" -v $CURRENT_DIR/host_data:/benchmark/volume_data bench_fw:latest python3 train_main.py --model_name $1 --data_name $2 --normalizetype mean-std --processing_type O_A --max_epoch 10 --middle_epoch 10
             run_output=$?
             echo "Run finished! Clean-up..."
@@ -55,31 +54,44 @@ function RAM_benchmark {
         done
     done
 }
-PS3="Select the dataset/model combination: "
 
-select dataset in SEU MFPT; do
+PS3="Select the dataset/model combination: "
+echo $benchmark
+select dataset in SEU MFPT CWRU; do
   case $dataset in
     SEU)
-    select model in MLP Alexnet1d Resnet1d CNN_1d LeNet1d Sae1d Ae1d; do
-        RAM_benchmark $model $dataset
+    select model in Alexnet1d Resnet1d CNN_1d LeNet1d BiLSTM1d Sae1d Ae1d MLP; do
+        CPU_benchmark $model $dataset
         echo "C'est fini"
         #break
     break
     done
     ;;
     MFPT)
-    select model in  MLP Alexnet1d Resnet1d CNN_1d LeNet1d; do
-        RAM_benchmark $model $dataset
+    select model in Alexnet1d Resnet1d CNN_1d LeNet1d BiLSTM1d Sae1d Ae1d MLP; do
+        CPU_benchmark $model $dataset
         echo "C'est fini"
         #break
     done
     break
     ;;
     quit)
-      break
+    break
       ;;
+    CWRU)
+    select model in Alexnet1d Resnet1d CNN_1d LeNet1d BiLSTM1d; do
+        CPU_benchmark $model $dataset
+        echo "C'est fini"
+        #break
+    done
+    break
+    ;;
+    quit)
+    break
+      ;;
+    
     *) 
-      echo "Invalid option $REPLY"
+    echo "Invalid option $REPLY"
       ;;
   esac
 done

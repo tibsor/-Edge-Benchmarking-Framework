@@ -3,7 +3,7 @@
 #TODO: add intrerupt flag for monitor
 INTERVAL=5 # interval (in seconds for logging information)
 #TODO: add user input for monitor time (with 1 sec default)
-OUTNAME=inference_benchmark.txt # log file  name
+OUTNAME=benchmark_monitor.txt # log file  name
 
 # function for logging container stats
 update_file() {

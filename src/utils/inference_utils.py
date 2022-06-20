@@ -100,7 +100,8 @@ class inference_utils(object):
         for phase in ['val']:
             valid_loss = 0.0
             self.model.eval()
-            random.seed(2022)
+            #TODO: Completely random, no seed
+            # random.seed(2022)
             randomlist = random.sample(range(0, len(self.dataloaders['val'].dataset.labels)-1), no_obs)
             with torch.set_grad_enabled(phase == 'train'):
 

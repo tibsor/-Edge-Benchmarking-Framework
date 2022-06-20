@@ -15,7 +15,7 @@ time_dict={"parse_args()": None, "create_folder()": None,"train.init()": None, "
 time_list=[]
 csv_header=None
 vol_path='/benchmark/volume_data'
-dataset_folder_name = {"SEU":"Mechanical-datasets", "MFPT":"MFPT_Fault_Data_Sets"}
+dataset_folder_name = {"SEU":"Mechanical-datasets", "MFPT":"MFPT_Fault_Data_Sets", "CWRU": "CWRU", "PU":"Paderborn", "XJTU":"XJTU-SY_Bearing_Datasets"}
 def parse_args():
 
     parser = argparse.ArgumentParser(description='Train')
