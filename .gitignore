@@ -14,3 +14,5 @@ MFPT_Fault_Data_Sets
 *.pyc 
 *_init_*
 *.png
+CWRU/
+Paderborn/
