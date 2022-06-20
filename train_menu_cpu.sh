@@ -12,12 +12,6 @@ function CPU_benchmark {
     read step
     cpu_quota_values=$(seq $upper_limit -$step $lower_limit)
 
-    # Check for old containers running and kill them
-    docker stop bench_test 1> /dev/null 2> /dev/null
-    docker rm bench_test 1> /dev/null 2> /dev/null
-    #redirect stdout and stderr to null for less verbose
-    #rm $CURRENT_DIR/host_data/*
-
     for cpu_quota in $cpu_quota_values
     do
     for i in {0..4..1}

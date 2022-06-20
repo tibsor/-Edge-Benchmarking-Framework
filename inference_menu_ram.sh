@@ -12,18 +12,10 @@ function RAM_benchmark {
     echo "Step:"
     read step
     memory_limit_values=$(seq $upper_limit -$step $lower_limit) # range for memory values
-    # upper_limit=256
-    # lower_limit=254 # FOR DEBUG
-    # step=2
-    # Check for old containers running and kill them
-    docker stop bench_test 1> /dev/null 2> /dev/null
-    docker rm bench_test 1> /dev/null 2> /dev/null
-    #redirect stdout and stderr to null for less verbose
 
     for memory_value in $memory_limit_values
     do
         mem_limit=$memory_value
-        #docker run -it --memory="${mem_limit}m" --memory-reservation="${mem_reserve}m" --memory-swap=256m inf_bench:latest python3 main.py  --model_name MLP --data_name SEU --data_dir /inference/Mechanical-datasets --normlizetype mean-std --processing_type O_A --checkpoint_dir /inference/checkpoint
         for i in {0..2..1}
             do 
             echo "Dataset/Model:$2/$1"
