@@ -157,7 +157,7 @@ class train_utils(object):
                     labels = labels.to(self.device)
                     # Do the learning process, in val, we do not care about the gradient for relaxing
                     with torch.set_grad_enabled(phase == 'train'):
-                        if inputs[1].shape != 1:
+                        if args.data_name == 'CWRU': # CWRU dataset misses input dimension
                             inputs = inputs.unsqueeze(1)   
                         # forward
                         logits = self.model(inputs)
