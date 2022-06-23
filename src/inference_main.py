@@ -14,7 +14,7 @@ time_dict={"parse_args()": None, "create_folder()": None,"inference.init()": Non
 time_list=[]
 csv_header=None
 vol_path='/benchmark/volume_data'
-dataset_folder_name = {"SEU":"Mechanical-datasets", "MFPT":"MFPT_Fault_Data_Sets"}
+dataset_folder_name = {"SEU":"Mechanical-datasets", "MFPT":"MFPT_Fault_Data_Sets","CWRU":"CWRU"}
 
 #mem_profiler_path=os.path.join(vol_path,'memory_profiler.log')
 global now

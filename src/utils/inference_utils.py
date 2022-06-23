@@ -98,7 +98,7 @@ class inference_utils(object):
         self.model.load_state_dict(model_checkpoint, strict=False)
         self.criterion = torch.nn.CrossEntropyLoss()
 
-    def evaluate(self, no_obs: int = 1):
+    def evaluate(self, no_obs: int = 10):
         #start = time.time()
         for phase in ['val']:
             valid_loss = 0.0
