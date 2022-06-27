@@ -16,8 +16,8 @@ function RAM_benchmark {
     for memory_value in $memory_limit_values
     do
         mem_limit=$memory_value
-        for i in {0..4..1}
-            do 
+        # for i in {0..4..1}
+            # do 
             echo "Dataset/Model:$2/$1"
             echo "Starting benchmark container with $mem_limit MB memory limit"
             docker run --rm -it -e MEM_LIMIT="$mem_limit" --memory="${mem_limit}m" --cpus="1.0" -v $CURRENT_DIR/host_data:/benchmark/volume_data bench_fw:latest python3 inference_main.py --model_name $1 --data_name $2 --normalizetype mean-std --processing_type O_A --max_epoch 10 --middle_epoch 10
@@ -43,7 +43,7 @@ function RAM_benchmark {
                 kill -9 $PID
                 break
             fi
-        done
+        # done
     done
 }
 
