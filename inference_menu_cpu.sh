@@ -4,9 +4,10 @@ function CPU_benchmark {
     CURRENT_DIR=$(pwd)
     echo "Current working directory:$CURRENT_DIR"
     echo "Make sure your upper limit is higher than your lower limit!"
-    echo "Define an upper limit:"
+    echo "CPU Quota = CPU Cores * 100000;"
+    echo "Define an upper CPU QUOTA limit:"
     read upper_limit
-    echo "Define a lower limit:"
+    echo "Define a lower CPU QUOTA limit:"
     read lower_limit
     echo "Define a step:"
     read step

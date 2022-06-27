@@ -5,9 +5,9 @@ function RAM_benchmark {
     # from HIGH_VALUE -> LOW_VALUE
     #rm $CURRENT_DIR/host_data/*
     echo "Please make sure the upper limit is higher than the lower limit!"
-    echo "Upper limit number (MBs):"
+    echo "Upper limit number (MB):"
     read upper_limit
-    echo "Lower limit number (MBs):"
+    echo "Lower limit number (MB):"
     read lower_limit
     echo "Step:"
     read step
