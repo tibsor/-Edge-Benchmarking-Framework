@@ -421,7 +421,7 @@ def epoch_plot (cpu_runtime_values = None, ram_runtime_values = None, model_name
     # if CPU_flag:
     print ("Epoch plot done!")
 
-def plot_all_models(dir):
+def plot_all_models(dir, cpu_limit: int = None):
     cwd = os.getcwd()
     host_data_path = os.path.join(cwd,'host_data')
     folder_create(os.path.join(cwd,'plots'))
@@ -587,11 +587,12 @@ def plot_all_models(dir):
                                     # print("\n")
                                     current_time_stamp = list_element[:timedate_length]
                                     train_log_timedate_struct.append(datetime.datetime.strptime(current_time_stamp, "%Y-%m-%d %H:%M:%S.%f"))
-                            i = bisect.bisect_left(cpu_rt_datetime_struct, train_log_timedate_struct[-1])
+                            i = bisect.bisect_left(cpu_rt_datetime_struct, train_log_timedate_struct[0])
                             train_run_quota = cpu_values_list[i-1][1]
                             qttc = int(train_run_quota)/100000.0
-                            for item in x_axis_cpu:
-                                cpu_big_boy_list.append([model, item, qttc])
+                            if cpu_limit == None or cpu_limit > int(train_run_quota):
+                                for item in x_axis_cpu:
+                                    cpu_big_boy_list.append([model, item, qttc])
             if lowest_model_memory_run != 10000:
                 lowest_ram_list.append([model, lowest_model_memory_run])
         low_ram_df = pd.DataFrame(lowest_ram_list, columns=['Models', 'Minimum RAM'])
@@ -615,7 +616,7 @@ def plot_all_models(dir):
         fig.savefig(f'{cwd}/plots/{dataset}_RAM_bar_plot_train.png')
         
 
-def inference_plot(dir):
+def inference_plot(dir, cpu_limit: int = None):
     cwd = os.getcwd() 
     folder_create(os.path.join(cwd,'plots'))
 
@@ -658,7 +659,8 @@ def inference_plot(dir):
                 total_time_list = []
                 for runtime_list in cpu_values_list:
                     CPU_qttc= float(runtime_list[1])/100000.0 # convert cpu quota to cpu cores for easier interpretation
-                    cpu_big_boy_list.append([model, float(runtime_list[-1]), CPU_qttc])
+                    if cpu_limit == None or cpu_limit > int(runtime_list[1]):
+                        cpu_big_boy_list.append([model, float(runtime_list[-1]), CPU_qttc])
                     # for function_time in runtime_list[2:]:
                     #     function_time_list.append(float(function_time))
                     #     time_sum+=float(function_time)
@@ -671,8 +673,6 @@ def inference_plot(dir):
                             runtime_header = next(csvreader, None)
                             for row in csvreader:
                                 memory_values_list.append(row)
-                function_time_list=[]
-                total_time_list = []
 
                 for runtime_list in memory_values_list:
                     ram_big_boy_list.append([model, float(runtime_list[-1]), float(runtime_list[1])])
@@ -696,19 +696,6 @@ def inference_plot(dir):
         # ax3.fig.suptitle(f"{dataset}\nMinimum required RAM")
         fig.savefig(f'{cwd}/plots/{dataset}_RAM_bar_plot_inference.png')
 
-        # cpu_big_boy_df = remove_outlier(cpu_big_boy_df,'Time(s)')
-        # ram_big_boy_df = remove_outlier(ram_big_boy_df, 'Time(s)')
-
-        # ax1 = sns.relplot(data=ram_big_boy_df, x='RAM(MB)', y='Time(s)', hue='Model', kind='line', height=7, aspect=5/4)
-        # ax2 = sns.relplot(data=cpu_big_boy_df, x='CPU Cores', y='Time(s)', hue='Model', kind='line', height=7, aspect=5/4)
-        # ax1.fig.suptitle(f"{dataset}\nRAM(MB) vs Inference Time (Quantile)\nFor 10 consecutive observations")
-        # ax2.fig.suptitle(f"{dataset}\nCPU Cores vs Inference Time (Quantile)\nFor 10 consecutive observations")
-        # ax1.savefig(f'{cwd}/plots/{dataset}_RAM_inf_quantile.png')
-        # ax2.savefig(f'{cwd}/plots/{dataset}_CPU_inf_quantile.png')
-            
-
-
-
 def remove_outlier(df_in, col_name):
     q1 = df_in[col_name].quantile(0.25)
     q3 = df_in[col_name].quantile(0.75)
@@ -717,6 +704,22 @@ def remove_outlier(df_in, col_name):
     fence_high = q3+1.5*iqr
     df_out = df_in.loc[(df_in[col_name] > fence_low) & (df_in[col_name] < fence_high)]
     return df_out
+
+def input_limit():
+    os.system("stty sane")
+    while True:
+        try:
+            value = int(input("CPU Quota plot limit:"))
+        except ValueError:
+            print("Sorry, I didn't understand that.")
+            continue
+
+        if value < 0:
+            print("Sorry, your response must not be negative.")
+            continue
+        else:
+            break
+    return value
 
 if __name__=="__main__":
     train_flag = False
@@ -762,12 +765,18 @@ if __name__=="__main__":
     if train_flag:
         epoch_plot(cpu_runtime_values=cpu_values_list, ram_runtime_values=memory_values_list, model_name=model_name, dataset_name=dataset_name)
     _tmp_flag = questionary.confirm("Train overlay plot?").ask()
+    _cpu_limit = None
     if _tmp_flag:
+        if questionary.confirm("Choose CPU top limit?").ask():
+            _cpu_limit = input_limit()
         cwd = os.getcwd()
         logs_dir = os.path.join(cwd,'host_data')
-        plot_all_models(logs_dir)
+        plot_all_models(logs_dir, _cpu_limit)
+    _cpu_limit = None
     if questionary.confirm("Inference overlay plot?").ask():
+        if questionary.confirm("Choose CPU top limit?").ask():
+            _cpu_limit = input_limit()
         cwd = os.getcwd()
         logs_dir = os.path.join(cwd,'host_data')
-        inference_plot(logs_dir)
+        inference_plot(logs_dir, _cpu_limit)
     print ("Script ran sucessfully!")
