@@ -1,94 +1,223 @@
+# Data science libraries
 import os
+import scipy.io
+import numpy as np
 import pandas as pd
-from scipy.io import loadmat
 from sklearn.model_selection import train_test_split
+
+# Pytorch
+import torch
+from torch import nn
+from torch import Tensor
+from torch.utils.data import TensorDataset, DataLoader
+from torch import optim
+from torch.nn.modules.loss import CrossEntropyLoss
+
+# Others
+from pathlib import Path
+
+#from helper import get_df_all
+# from train_helper import get_dataloader, fit, validate 
 from datasets.SequenceDatasets import dataset
 from datasets.sequence_aug import *
-from tqdm import tqdm
 
-signal_size = 1024
+# Pytorch
+import torch
+from torch import nn
+from torch import Tensor
+from torch.utils.data import TensorDataset, DataLoader
 
+working_dir = Path('/benchmark/')
+DATA_PATH = Path("/benchmark/CWRU/")
+# save_model_path = working_dir / 'Model'
+DE_path = DATA_PATH / '12k_FE'
 
-datasetname = ["12k Drive End Bearing Fault Data", "12k Fan End Bearing Fault Data", "48k Drive End Bearing Fault Data",
-               "Normal Baseline Data"]
-normalname = ["97.mat", "98.mat", "99.mat", "100.mat"]
-# For 12k Drive End Bearing Fault Data
-dataname1 = ["105.mat", "118.mat", "130.mat", "169.mat", "185.mat", "197.mat", "209.mat", "222.mat",
-             "234.mat"]  # 1797rpm
-dataname2 = ["106.mat", "119.mat", "131.mat", "170.mat", "186.mat", "198.mat", "210.mat", "223.mat",
-             "235.mat"]  # 1772rpm
-dataname3 = ["107.mat", "120.mat", "132.mat", "171.mat", "187.mat", "199.mat", "211.mat", "224.mat",
-             "236.mat"]  # 1750rpm
-dataname4 = ["108.mat", "121.mat", "133.mat", "172.mat", "188.mat", "200.mat", "212.mat", "225.mat",
-             "237.mat"]  # 1730rpm
-# For 12k Fan End Bearing Fault Data
-dataname5 = ["278.mat", "282.mat", "294.mat", "274.mat", "286.mat", "310.mat", "270.mat", "290.mat",
-             "315.mat"]  # 1797rpm
-dataname6 = ["279.mat", "283.mat", "295.mat", "275.mat", "287.mat", "309.mat", "271.mat", "291.mat",
-             "316.mat"]  # 1772rpm
-dataname7 = ["280.mat", "284.mat", "296.mat", "276.mat", "288.mat", "311.mat", "272.mat", "292.mat",
-             "317.mat"]  # 1750rpm
-dataname8 = ["281.mat", "285.mat", "297.mat", "277.mat", "289.mat", "312.mat", "273.mat", "293.mat",
-             "318.mat"]  # 1730rpm
-# For 48k Drive End Bearing Fault Data
-dataname9 = ["109.mat", "122.mat", "135.mat", "174.mat", "189.mat", "201.mat", "213.mat", "250.mat",
-             "262.mat"]  # 1797rpm
-dataname10 = ["110.mat", "123.mat", "136.mat", "175.mat", "190.mat", "202.mat", "214.mat", "251.mat",
-              "263.mat"]  # 1772rpm
-dataname11 = ["111.mat", "124.mat", "137.mat", "176.mat", "191.mat", "203.mat", "215.mat", "252.mat",
-              "264.mat"]  # 1750rpm
-dataname12 = ["112.mat", "125.mat", "138.mat", "177.mat", "192.mat", "204.mat", "217.mat", "253.mat",
-              "265.mat"]  # 1730rpm
-# label
-label = [1, 2, 3, 4, 5, 6, 7, 8, 9]  # The failure data is labeled 1-9
-axis = ["_DE_time", "_FE_time", "_BA_time"]
+bs = 64
 
-
-# generate Training Dataset and Testing Dataset
-def get_files(root, test=False):
+# Functions for training
+def get_dataloader(train_ds, valid_ds, bs):
     '''
-    This function is used to generate the final training set and test set.
-    root:The location of the data set
-    normalname:List of normal data
-    dataname:List of failure data
+        Get dataloaders of the training and validation set.
+        Parameter:
+            train_ds: Dataset
+                Training set
+            valid_ds: Dataset
+                Validation set
+            bs: Int
+                Batch size
+        
+        Return:
+            (train_dl, valid_dl): Tuple of DataLoader
+                Dataloaders of training and validation set.
     '''
-    data_root1 = os.path.join('/tmp', root, datasetname[3])
-    data_root2 = os.path.join('/tmp', root, datasetname[0])
+    return (
+        DataLoader(train_ds, batch_size=bs, shuffle=True),
+        DataLoader(valid_ds, batch_size=bs * 2),
+    )
 
-    path1 = os.path.join('/tmp', data_root1, normalname[0])  # 0->1797rpm ;1->1772rpm;2->1750rpm;3->1730rpm
-    data, lab = data_load(path1, axisname=normalname[0],label=0)  # nThe label for normal data is 0
-
-    for i in tqdm(range(len(dataname1))):
-        path2 = os.path.join('/tmp', data_root2, dataname1[i])
-
-        data1, lab1 = data_load(path2, dataname1[i], label=label[i])
-        data += data1
-        lab += lab1
-    return [data, lab]
-
-
-def data_load(filename, axisname, label):
+def matfile_to_dic(folder_path):
     '''
-    This function is mainly used to generate test data and training data.
-    filename:Data location
-    axisname:Select which channel's data,---->"_DE_time","_FE_time","_BA_time"
+    Read all the matlab files of the CWRU Bearing Dataset and return a 
+    dictionary. The key of each item is the filename and the value is the data 
+    of one matlab file, which also has key value pairs.
+    
+    Parameter:
+        folder_path: 
+            Path (Path object) of the folder which contains the matlab files.
+    Return:
+        output_dic: 
+            Dictionary which contains data of all files in the folder_path.
     '''
-    datanumber = axisname.split(".")
-    if eval(datanumber[0]) < 100:
-        realaxis = "X0" + datanumber[0] + axis[0]
-    else:
-        realaxis = "X" + datanumber[0] + axis[0]
-    fl = loadmat(filename)[realaxis]
-    data = []
-    lab = []
-    start, end = 0, signal_size
-    while end <= fl.shape[0]:
-        data.append(fl[start:end])
-        lab.append(label)
-        start += signal_size
-        end += signal_size
+    output_dic = {}
+    for _, filepath in enumerate(folder_path.glob('*.mat')):
+        # strip the folder path and get the filename only.
+        key_name = str(filepath).split('\\')[-1]
+        output_dic[key_name] = scipy.io.loadmat(filepath)
+    return output_dic
 
-    return data, lab
+
+def remove_dic_items(dic):
+    '''
+    Remove redundant data in the dictionary returned by matfile_to_dic inplace.
+    '''
+    # For each file in the dictionary, delete the redundant key-value pairs
+    for _, values in dic.items():
+        del values['__header__']
+        del values['__version__']    
+        del values['__globals__']
+
+
+def rename_keys(dic):
+    '''
+    Rename some keys so that they can be loaded into a 
+    DataFrame with consistent column names
+    '''
+    # For each file in the dictionary
+    for _,v1 in dic.items():
+        # For each key-value pair, rename the following keys 
+        for k2,_ in list(v1.items()):
+            if 'DE_time' in k2:
+                v1['DE_time'] = v1.pop(k2)
+            elif 'BA_time' in k2:
+                v1['BA_time'] = v1.pop(k2)
+            elif 'FE_time' in k2:
+                v1['FE_time'] = v1.pop(k2)
+            elif 'RPM' in k2:
+                v1['RPM'] = v1.pop(k2)
+
+
+def label(filename):
+    '''
+    Function to create label for each signal based on the filename. Apply this
+    to the "filename" column of the DataFrame.
+    Usage:
+        df['label'] = df['filename'].apply(label)
+    '''
+    if 'B' in filename:
+        return 'B'
+    elif 'IR' in filename:
+        return 'IR'
+    elif 'OR' in filename:
+        return 'OR'
+    elif 'Normal' in filename:
+        return 'N'
+
+
+def matfile_to_df(folder_path):
+    '''
+    Read all the matlab files in the folder, preprocess, and return a DataFrame
+    
+    Parameter:
+        folder_path: 
+            Path (Path object) of the folder which contains the matlab files.
+    Return:
+        DataFrame with preprocessed data
+    '''
+    dic = matfile_to_dic(folder_path)
+    remove_dic_items(dic)
+    rename_keys(dic)
+    df = pd.DataFrame.from_dict(dic).T
+    df = df.reset_index().rename(mapper={'index':'filename'},axis=1)
+    df['label'] = df['filename'].apply(label)
+    return df.drop(['BA_time','FE_time', 'RPM', 'ans'], axis=1, errors='ignore')
+
+
+def divide_signal(df, segment_length):
+    '''
+    This function divide the signal into segments, each with a specific number 
+    of points as defined by segment_length. Each segment will be added as an 
+    example (a row) in the returned DataFrame. Thus it increases the number of 
+    training examples. The remaining points which are less than segment_length 
+    are discarded.
+    
+    Parameter:
+        df: 
+            DataFrame returned by matfile_to_df()
+        segment_length: 
+            Number of points per segment.
+    Return:
+        DataFrame with segmented signals and their corresponding filename and 
+        label
+    '''
+    dic = {}
+    idx = 0
+    for i in range(df.shape[0]):
+        n_sample_points = len(df.iloc[i,1])
+        n_segments = n_sample_points // segment_length
+        for segment in range(n_segments):
+            dic[idx] = {
+                'signal': df.iloc[i,1][segment_length * segment:segment_length * (segment+1)], 
+                'label': df.iloc[i,2],
+                'filename' : df.iloc[i,0]
+            }
+            idx += 1
+    df_tmp = pd.DataFrame.from_dict(dic,orient='index')
+    df_output = pd.concat(
+        [df_tmp[['label', 'filename']], 
+         pd.DataFrame(np.hstack(df_tmp["signal"].values).T)
+        ], 
+        axis=1 )
+    return df_output
+
+
+def normalize_signal(df):
+    '''
+    Normalize the signals in the DataFrame returned by matfile_to_df() by subtracting
+    the mean and dividing by the standard deviation.
+    '''
+    mean = df['DE_time'].apply(np.mean)
+    std = df['DE_time'].apply(np.std)
+    df['DE_time'] = (df['DE_time'] - mean) / std
+
+
+def get_df_all(data_path, segment_length=512, normalize=False):
+    '''
+    Load, preprocess and return a DataFrame which contains all signals data and
+    labels and is ready to be used for model training.
+    
+    Parameter:
+        normal_path: 
+            Path of the folder which contains matlab files of normal bearings
+        DE_path: 
+            Path of the folder which contains matlab files of DE faulty bearings
+        segment_length: 
+            Number of points per segment. See divide_signal() function
+        normalize: 
+            Boolean to perform normalization to the signal data
+    Return:
+        df_all: 
+            DataFrame which is ready to be used for model training.
+    '''
+    df = matfile_to_df(data_path)
+
+    if normalize:
+        normalize_signal(df)
+    df_processed = divide_signal(df, segment_length)
+
+    map_label = {'N':0, 'B':1, 'IR':2, 'OR':3}
+    df_processed['label'] = df_processed['label'].map(map_label)
+    return df_processed
+
 
 
 def data_transforms(dataset_type="train", normlize_type="-1-1"):
@@ -111,14 +240,6 @@ def data_transforms(dataset_type="train", normlize_type="-1-1"):
     }
     return transforms[dataset_type]
 
-def train_test_split_order(data_pd, test_size=0.8, num_classes=10):
-    train_pd = pd.DataFrame(columns=('data', 'label'))
-    val_pd = pd.DataFrame(columns=('data', 'label'))
-    for i in range(num_classes):
-        data_pd_tmp = data_pd[data_pd['label'] == i].reset_index(drop=True)
-        train_pd = train_pd.append(data_pd_tmp.loc[:int((1-test_size)*data_pd_tmp.shape[0]), ['data', 'label']], ignore_index=True)
-        val_pd = val_pd.append(data_pd_tmp.loc[int((1-test_size)*data_pd_tmp.shape[0]):, ['data', 'label']], ignore_index=True)
-    return train_pd,val_pd
 
 class CWRU(object):
     num_classes = 10
@@ -130,13 +251,30 @@ class CWRU(object):
 
     def data_preprare(self, test=False):
 
-        list_data = get_files(self.data_dir, test)
+        # list_data = get_files(self.data_dir, test)
+        df_all = get_df_all(DE_path, segment_length=500, normalize=True)
+        features = df_all.columns[2:]
+        target = 'label'
+
+        ## Split the data into train and validation set
+        X_train, X_valid, y_train, y_valid = train_test_split(df_all[features], 
+                                                            df_all[target], 
+                                                            test_size=0.20, random_state=0, shuffle=True
+                                                            )
+        X_train = torch.tensor(X_train.values, dtype=torch.float32)
+        X_valid = torch.tensor(X_valid.values, dtype=torch.float32)
+        y_train = torch.tensor(y_train.values, dtype=torch.long)
+        y_valid = torch.tensor(y_valid.values, dtype=torch.long)
+
+        train_ds = TensorDataset(X_train, y_train)
+        valid_ds = TensorDataset(X_valid, y_valid)
+        train_dl, valid_dl = get_dataloader(train_ds, valid_ds, bs)
+        ## Create DataLoader of train and validation set
+        
         if test:
-            test_dataset = dataset(list_data=list_data, test=True, transform=None)
+            test_dataset = dataset(list_data=df_all, test=True, transform=None)
             return test_dataset
         else:
-            data_pd = pd.DataFrame({"data": list_data[0], "label": list_data[1]})
-            train_pd, val_pd = train_test_split_order(data_pd, test_size=0.2, num_classes= 10)
-            train_dataset = dataset(list_data=train_pd, transform=data_transforms('train',self.normlizetype))
-            val_dataset = dataset(list_data=val_pd, transform=data_transforms('val',self.normlizetype))
+            train_dataset = train_dl.dataset
+            val_dataset = valid_dl.dataset
             return train_dataset, val_dataset

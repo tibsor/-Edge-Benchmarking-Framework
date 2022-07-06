@@ -7,7 +7,7 @@ from datasets.SequenceDatasets import dataset
 from datasets.sequence_aug import *
 from tqdm import tqdm
 
-signal_size=1024
+signal_size = 1024
 
 #Data names of 5 bearing fault types under two working conditions
 Bdata = ["ball_20_0.csv","comb_20_0.csv","health_20_0.csv","inner_20_0.csv","outer_20_0.csv","ball_30_2.csv","comb_30_2.csv","health_30_2.csv","inner_30_2.csv","outer_30_2.csv"]
@@ -26,6 +26,7 @@ def get_files(root, test=False):
     datasetname:List of  dataset
     '''
     gearbox_folder = f'{SEU_path}/gearbox'
+    datasetname = os.listdir(os.path.join(root, os.listdir(root)[1]))  # 2:bearingset, 1:gearset
 
     root1 = os.path.join(gearbox_folder,"bearingset")
     root2 = os.path.join(gearbox_folder,"gearset")

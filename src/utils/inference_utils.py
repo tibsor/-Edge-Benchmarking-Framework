@@ -1,15 +1,13 @@
-#!/usr/bin/python
-# -*- coding:utf-8 -*-
-
+import itertools
 import logging
 import os
-import time
-import warnings
+from pyexpat import model
+import random
 import torch
-from torch import nn
-from torch import optim
+import warnings
+import numpy as np 
 import models
-
+vol_path = '/benchmark/volume_data'
 class inference_utils(object):
     def __init__(self, args, save_dir):
         self.args = args
@@ -17,24 +15,21 @@ class inference_utils(object):
 
     def setup(self):
         """
-        Initialize the datasets, model, loss and optimizer
+        Initialize the dataset, model
         :return:
         """
+        #start = time.time()
         args = self.args
-
-        # Consider the gpu or cpu condition
+        
         if torch.cuda.is_available():
             self.device = torch.device("cuda")
             self.device_count = torch.cuda.device_count()
-            logging.info('using {} gpus'.format(self.device_count))
             assert args.batch_size % self.device_count == 0, "batch size should be divided by device count"
         else:
-            warnings.warn("gpu is not available")
+            warnings.warn("gpu is not available, using CPU")
             self.device = torch.device("cpu")
             self.device_count = 1
-            logging.info('using {} cpu'.format(self.device_count))
-
-
+        
         # Load the datasets
         if args.processing_type == 'O_A':
             from CNN_Datasets.O_A import datasets
@@ -46,86 +41,83 @@ class inference_utils(object):
             from CNN_Datasets.R_NA import datasets
             Dataset = getattr(datasets, args.data_name)
         else:
-            raise Exception("processing type not implement")
-
-        print(Dataset)
-
+            raise Exception("processing type not implement")    
+        
         self.datasets = {}
+        if os.path.exists(f'{vol_path}/{args.data_name}/{args.data_name}_dataset.h5'):
+            self.dataloaders = torch.load(f'{vol_path}/{args.data_name}/{args.data_name}_dataset.h5') # mmap mode helps keep dataset off RAM
+            #self.datasets['val'] = self.dataloaders['val']
 
-        self.datasets['val'] = Dataset(args.data_dir,args.normlizetype).data_preprare()
+        else:
+            self.datasets['train'], self.datasets['val'] = Dataset(args.data_dir,args.normalizetype).data_preprare()
 
-        self.dataloaders = {x: torch.utils.data.DataLoader(self.datasets[x], batch_size=args.batch_size,
+            self.dataloaders = {x: torch.utils.data.DataLoader(self.datasets[x], batch_size=args.batch_size,
                                                            shuffle=(True if x == 'train' else False),
                                                            num_workers=args.num_workers,
-                                                           pin_memory=(True if self.device == 'cuda' else False))
-                            for x in ['val']}
+                                                           pin_memory=(True if self.device == 'cuda' else False)) for x in ['train', 'val']}
+
+            torch.save(self.dataloaders,f'{vol_path}/{args.data_name}/{args.data_name}_dataset.h5')
+
+        # val_dataset_path = '/inference/val_dataset.h5'
+        # val_dataset = torch.load(val_dataset_path) 
+        # global batch_size
+        # batch_size = 1
+        # self.val_dataloader = torch.utils.data.DataLoader(val_dataset,batch_size=batch_size, shuffle=False)
+
+        self.model = getattr(models, args.model_name)
         # Define the model
-        self.model = getattr(models, args.model_name)(in_channel=Dataset.inputchannel, out_channel=Dataset.num_classes)
-        if self.device_count > 1:
-            self.model = torch.nn.DataParallel(self.model)
-
-        # # Define the optimizer
-        # if args.opt == 'sgd':
-        #     self.optimizer = optim.SGD(self.model.parameters(), lr=args.lr,
-        #                                 momentum=args.momentum, weight_decay=args.weight_decay)
-        # elif args.opt == 'adam':
-        #     self.optimizer = optim.Adam(self.model.parameters(), lr=args.lr,
-        #                                 weight_decay=args.weight_decay)
-        # else:
-        #     raise Exception("optimizer not implement")
-
-        # # Define the learning rate decay
-        # if args.lr_scheduler == 'step':
-        #     steps = [int(step) for step in args.steps.split(',')]
-        #     self.lr_scheduler = optim.lr_scheduler.MultiStepLR(self.optimizer, steps, gamma=args.gamma)
-        # elif args.lr_scheduler == 'exp':
-        #     self.lr_scheduler = optim.lr_scheduler.ExponentialLR(self.optimizer, args.gamma)
-        # elif args.lr_scheduler == 'stepLR':
-        #     steps = int(args.steps)
-        #     self.lr_scheduler = optim.lr_scheduler.StepLR(self.optimizer, steps, args.gamma)
-        # elif args.lr_scheduler == 'fix':
-        #     self.lr_scheduler = None
-        # else:
-        #     raise Exception("lr schedule not implement")
-
-        # # Load the checkpoint
-        # self.start_epoch = 0
-
-        # # Invert the model and define the loss
-        # self.model.to(self.device)
-        # self.criterion = nn.CrossEntropyLoss()
-
-
-    def inference(self):
-        """
-        Training process
-        :return:
-        """
-        args = self.args
-
-        step = 0
-        best_acc = 0.0
-        batch_count = 0
-        batch_loss = 0.0
-        batch_acc = 0
-        step_start = time.time()
-
-
-
-        epoch_start = time.time()
-        epoch_acc = 0.8873
-        epoch_loss = 0.3475
-        phase = 'val'
-        self.model.eval()
+        if args.model_name == 'CNN_1d' or args.model_name == 'CNN_2d':
+            self.model = self.model.CNN(in_channel=Dataset.inputchannel, out_channel=Dataset.num_classes)
+        elif args.model_name == 'Alexnet1d':
+            self.model = self.model.AlexNet(in_channel=Dataset.inputchannel, out_channel=Dataset.num_classes)
+        elif args.model_name == 'Resnet1d':
+            self.model = self.model.resnet18(in_channel=Dataset.inputchannel, out_channel=Dataset.num_classes)
+        elif args.model_name == 'BiLSTM1d':
+            self.model = getattr(models, args.model_name)(in_channel=Dataset.inputchannel, out_channel=Dataset.num_classes)
+        elif args.model_name == 'LeNet1d':
+            self.model = self.model.LeNet(in_channel=Dataset.inputchannel, out_channel=Dataset.num_classes)
+        elif args.model_name == 'Sae1d' or args.model_name == 'Ae1d':
+            raise NotImplementedError('Inference not implemented for Sae1d & Ae1d models!')
+        else:
+            self.model = getattr(models, args.model_name)(in_channel=Dataset.inputchannel, out_channel=Dataset.num_classes)
         
+        
+        tmp_path = os.path.join(vol_path, self.args.data_name, self.args.model_name)
+        model_to_load = None
+        for file in os.listdir(tmp_path):
+            if file.endswith(".pth"):
+                model_to_load = file
+        if model_to_load == None:
+            raise ValueError("No model found! Please train one before")
+        model_checkpoint = torch.load(os.path.join(tmp_path,model_to_load), map_location=torch.device('cpu'))
+        from collections import OrderedDict
+        new_state_dict = OrderedDict()
+        for k,v in model_checkpoint.items():
+            name = k.replace("module.", "") #remove module string
+            new_state_dict[name] = v
+        self.model.load_state_dict(model_checkpoint, strict=False)
+        self.criterion = torch.nn.CrossEntropyLoss()
 
+    def evaluate(self, no_obs: int = 10):
+        #start = time.time()
+        for phase in ['val']:
+            valid_loss = 0.0
+            self.model.eval()
+            #TODO: Completely random, no seed
+            # random.seed(2022)
+            randomlist = random.sample(range(0, len(self.dataloaders['val'].dataset.labels)-1), no_obs)
+            with torch.set_grad_enabled(phase == 'train'):
 
+                for val in randomlist:
 
+                    sample_at = val
+                    k = int(np.floor(sample_at/self.args.batch_size))
 
+                    data,labels = next(itertools.islice(self.dataloaders['val'], k, None))
 
-
-
-
-
-
-
+                    logits = self.model(data)
+                    loss = self.criterion(logits, labels)
+                    pred = logits.argmax(dim=1)
+                    correct = torch.eq(pred, labels).float().sum().item()
+                    loss_temp = loss.item() * data.size(0)
+                    logging.info(f"Correct: {correct}, Loss Temp: {loss_temp}\n")

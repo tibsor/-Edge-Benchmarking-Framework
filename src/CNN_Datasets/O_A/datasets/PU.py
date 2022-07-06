@@ -11,16 +11,16 @@ signal_size = 1024
 
 
 #1 Undamaged (healthy) bearings(6X)
-HBdata = ['K001',"K002",'K003','K004','K005','K006']
+HBdata = ['K001']
 label1=[0,1,2,3,4,5]  #The undamaged (healthy) bearings data is labeled 1-9
 #2 Artificially damaged bearings(12X)
-ADBdata = ['KA01','KA03','KA05','KA06','KA07','KA08','KA09','KI01','KI03','KI05','KI07','KI08']
+ADBdata = ['KA01','KI01']
 label2=[6,7,8,9,10,11,12,13,14,15,16,17]    #The artificially damaged bearings data is labeled 4-15
 #3 Bearings with real damages caused by accelerated lifetime tests(14x)
 # RDBdata = ['KA04','KA15','KA16','KA22','KA30','KB23','KB24','KB27','KI04','KI14','KI16','KI17','KI18','KI21']
 # label3=[18,19,20,21,22,23,24,25,26,27,28,29,30,31]  #The artificially damaged bearings data is labeled 16-29
 
-RDBdata = ['KA04','KA15','KA16','KA22','KA30','KB23','KB24','KB27','KI14','KI16','KI17','KI18','KI21']
+#RDBdata = ['KA04','KA15','KA16','KA22','KA30','KB23','KB24','KB27','KI14','KI16','KI17','KI18','KI21']
 label3=[i for i in range(13)]
 
 #working condition
@@ -37,9 +37,9 @@ def get_files(root, test=False):
     lab = []
 
 
-    for k in tqdm(range(len(RDBdata))):
-        name3 = state+"_"+RDBdata[k]+"_1"
-        path3=os.path.join('/tmp',root,RDBdata[k],name3+".mat")        
+    for k in tqdm(range(len(ADBdata))):
+        name3 = state+"_"+ADBdata[k]+"_1"
+        path3=os.path.join('/tmp',root,ADBdata[k],name3+".mat")        
         data3, lab3= data_load(path3,name=name3,label=label3[k])
         data +=data3
         lab +=lab3

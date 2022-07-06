@@ -34,7 +34,7 @@ class BiLSTM(nn.Module):
         x = torch.transpose(x, 1, 2)
         bilstm_out, _ = self.bilstm(x)
         bilstm_out = torch.tanh(bilstm_out)
-        bilstm_out = bilstm_out.view(bilstm_out.size(0), -1)
+        bilstm_out = bilstm_out.reshape(bilstm_out.size(0), -1)
         logit = self.hidden2label1(bilstm_out)
         logit = self.hidden2label2(logit)
 

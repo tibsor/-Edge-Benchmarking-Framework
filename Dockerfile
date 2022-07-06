@@ -1,35 +1,29 @@
 FROM python:3.7.13-slim-buster AS base
 
-ENV MAIN_APP=main.py
 # create virtual environment
-ENV VIRTUAL_ENV=/opt/inference_env
-RUN python3 -m venv /opt/inference_env
+ENV VIRTUAL_ENV=/opt/benchmark_env
+RUN python3 -m venv /opt/benchmark_env
+RUN /opt/benchmark_env/bin/python3 -m pip install --upgrade pip
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
-# "apt" has unstable CLI, so we use apt-get instead
-RUN apt-get update
-# install necessary dependencies for python packages
-RUN apt-get install -y libglib2.0-0 libsm6 libxrender1 libxext6
+#set workingdir
+WORKDIR /benchmark/
 
-WORKDIR /inference/
+RUN apt update
+# install necessary dependencies for python packages
+RUN apt install -y libglib2.0-0 libsm6 libxrender1 libxext6
 # get env packages & install them
-COPY ./src/conda_env.txt /inference/requirements.txt 
+COPY ./src/local_env.txt /benchmark/requirements.txt 
 RUN pip install -r requirements.txt
 
-# to avoid caching problems for code while building, we will force remove anything left in the inference folder before copying the source code
-RUN rm -rf /inference/
-COPY  ./src/ /inference/
 
-# debugger
+#### DATASET SECTION ####
+# COPY ./Mechanical-datasets/ /benchmark/Mechanical-datasets/
+# COPY ./MFPT_Fault_Data_Sets/ /benchmark/MFPT_Fault_Data_Sets/
+# COPY ./CWRU/ /benchmark/CWRU
+# COPY ./Paderborn/ /benchmark/Paderborn/
+# COPY ./XJTU-SY_Bearing_Datasets /benchmark/XJTU-SY_Bearing_Datasets/
+# COPY ./dataset_paderborn/ /benchmark/dataset_paderborn
+#### DATASET SECTION END####
 
-# FROM base as debug
-
-# RUN pip install ptvsd
-# CMD python3 -m ptvsd --host 0.0.0.0 --port 5678 --wait --multiprocess main.py
-# #ENTRYPOINT ["python3", "-m", "ptvsd", "--listen", "0.0.0.0:5678", "--wait-for-client", "-m"]
-
-# primary
-FROM base as primary
-
-CMD [ "python3", "main.py" ]
-#RUN python3 main.py
+COPY  ./src/ /benchmark/
