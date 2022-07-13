@@ -19,7 +19,7 @@ dockerfile_strings = ['FROM python:3.7.13-slim-buster AS base',
 'WORKDIR /benchmark/',
 'RUN apt update',
 'RUN apt install -y libglib2.0-0 libsm6 libxrender1 libxext6',
-'COPY ./src/conda_env.txt /benchmark/requirements.txt',
+'COPY ./src/container_env.txt /benchmark/requirements.txt',
 'RUN pip install -r requirements.txt',
 'COPY  ./src/ /benchmark/']
 
