@@ -255,25 +255,28 @@ def write_ram_scripts(image_name, dataset_list, models, topl_list, bottoml_list,
             for line in ram_script_strings:
                 file.write(f'{line}\n')
     
-def make_executable():
+def make_executable(benchmark_options):
     for process in ['train', 'inference']:
-        for param in ['cpu', 'ram']:
+        for param in benchmark_options:
             makeExecutable = f'chmod +x {cwd}/scripts/{process}_{param}.sh'
             subprocess.Popen(makeExecutable.split(), stdout=subprocess.PIPE).wait() # make script file executable
 
-def start_benchmark():
-    make_executable()
+def start_benchmark(benchmark_options):
+    make_executable(benchmark_options)
     for process in ['train', 'inference']:
-        for param in ['cpu', 'ram']:
+        for param in benchmark_options:
             bashCommand = f'{cwd}/scripts/{process}_{param}.sh'
             benchmark = subprocess.Popen(['sh', bashCommand]).wait() # start benchmark
 
 def create_scripts(benchmark_options, image_name, dataset_folders, models):
-    folder_create(os.path.join(cwd,'scripts'))
+    scripts_path = os.path.join(cwd,'scripts')
+    folder_create(scripts_path)
+    for f in os.listdir(scripts_path):
+        os.remove(os.path.join(scripts_path, f))
     train_iterations, inf_iterations = get_iterations()
     different_limits = questionary.confirm("Different limits for each process?\ni.e custom top, bottom and step for train AND inference").ask()
     for option in benchmark_options:
-        if option == 'CPU':
+        if option == 'cpu':
             if different_limits:    
                 print('Train limits first: ')
                 cpu_top_train, cpu_bottom_train, cpu_step_train = get_cpu_limits()
@@ -293,7 +296,7 @@ def create_scripts(benchmark_options, image_name, dataset_folders, models):
                 cpu_step = [cpu_step_train, cpu_step_inf]
 
             write_cpu_scripts(image_name, folder_to_dataset(dataset_folders), models, cpu_top, cpu_bottom, cpu_step, train_iterations, inf_iterations)
-        if option == 'RAM':
+        if option == 'ram':
             if different_limits:
                 print('Train limits first: ')
                 ram_top_train, ram_bottom_train, ram_step_train = get_ram_limits()
@@ -325,6 +328,6 @@ if __name__ == "__main__":
         dataset_folders = search_dataset(datasets_path)
     models_list = get_models(models_path)
     models = questionary.checkbox("Select models to benchmark:", choices=models_list).ask()
-    benchmark_options = questionary.checkbox ("CPU/RAM benchmarking?",choices=["CPU", "RAM"]).ask()
+    benchmark_options = questionary.checkbox ("CPU/RAM benchmarking?",choices=["cpu", "ram"]).ask()
     create_scripts(benchmark_options, image_name, dataset_folders, models)
-    start_benchmark()
+    start_benchmark(benchmark_options)
