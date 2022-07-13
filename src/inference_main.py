@@ -196,9 +196,9 @@ if __name__ == '__main__':
             writer.writerow(values_list)
     #date_folder = os.path.join(model_folder,f'{now.year}_{now.month}_{now.day}')
     if memory_limit:
-        shutil.copy(os.path.join(cwd,"RAM_inference.log"),f'{vol_path}/{args.data_name}/{args.model_name}/{now.year}_{now.month}_{now.day}/RAM_log/{now.hour}_{now.minute}_RAM_inference.log')
+        shutil.copy(os.path.join(cwd,"RAM_inference.log"),f'{vol_path}/{args.data_name}/{args.model_name}/RAM_log/{now.year}_{now.month}_{now.day}/{now.hour}_{now.minute}_RAM_inference.log')
     if cpu_quota:
-        shutil.copy(os.path.join(cwd,"CPU_inference.log"),f'{vol_path}/{args.data_name}/{args.model_name}/{now.year}_{now.month}_{now.day}/CPU_log/{now.hour}_{now.minute}_CPU_inference.log')
+        shutil.copy(os.path.join(cwd,"CPU_inference.log"),f'{vol_path}/{args.data_name}/{args.model_name}/CPU_log/{now.year}_{now.month}_{now.day}/{now.hour}_{now.minute}_CPU_inference.log')
 
 
 
