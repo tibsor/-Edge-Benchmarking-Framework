@@ -9,14 +9,27 @@ import numpy as np
 import models
 vol_path = '/benchmark/volume_data'
 class inference_utils(object):
+    """inference_utils object contains the definitions for initializing, setup and evaluating 
+    """
     def __init__(self, args, save_dir):
+        """Initialize the inference object given the arguments from inference_main.py parse_args() function
+
+        Args:
+            args: parsed args from main function 
+            save_dir (str): where the log will be saved (same place as model location)
+        """
         self.args = args
         self.save_dir = save_dir
 
     def setup(self):
-        """
-        Initialize the dataset, model
-        :return:
+        """Initialize the dataset and model for inference
+        Loads arguments, sets device to GPU (if available, else CPU), loads the dataset with it's specific processing type, creates the model, defines the optimizer & learning rate, then loads saved model weights into previously created model
+
+
+        Raises:
+            Exception: if processing type is not given (R_A, O_A, R_NA)
+            NotImplementedError: for autoencoder models
+            ValueError: If no trained model is found in save_dir folder
         """
         #start = time.time()
         args = self.args
@@ -58,12 +71,6 @@ class inference_utils(object):
 
             torch.save(self.dataloaders,f'{vol_path}/{args.data_name}/{args.data_name}_dataset.h5')
 
-        # val_dataset_path = '/inference/val_dataset.h5'
-        # val_dataset = torch.load(val_dataset_path) 
-        # global batch_size
-        # batch_size = 1
-        # self.val_dataloader = torch.utils.data.DataLoader(val_dataset,batch_size=batch_size, shuffle=False)
-
         self.model = getattr(models, args.model_name)
         # Define the model
         if args.model_name == 'CNN_1d' or args.model_name == 'CNN_2d':
@@ -80,7 +87,6 @@ class inference_utils(object):
             raise NotImplementedError('Inference not implemented for Sae1d & Ae1d models!')
         else:
             self.model = getattr(models, args.model_name)(in_channel=Dataset.inputchannel, out_channel=Dataset.num_classes)
-        
         
         tmp_path = os.path.join(vol_path, self.args.data_name, self.args.model_name)
         model_to_load = None
@@ -99,6 +105,11 @@ class inference_utils(object):
         self.criterion = torch.nn.CrossEntropyLoss()
 
     def evaluate(self, no_obs: int = 10):
+        """Evaluation process
+
+        Args:
+            no_obs (int, optional): How many random observations should be made. Defaults to 10.
+        """
         #start = time.time()
         for phase in ['val']:
             valid_loss = 0.0

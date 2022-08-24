@@ -12,14 +12,25 @@ import models
 vol_path = '/benchmark/volume_data'
 
 class train_utils(object):
+    """train_utils object contains the definitions for initializing, setup and training 
+    """
     def __init__(self, args, save_dir):
+        """Initialize the training object given the arguments from train_main.py parse_args() function
+
+        Args:
+            args: parsed args from main function 
+            save_dir (str): where the log and model will be saved
+        """
         self.args = args
         self.save_dir = save_dir
 
     def setup(self):
-        """
-        Initialize the datasets, model, loss and optimizer
-        :return:
+        """Initialize the dataset and model for training
+        Loads arguments, sets device to GPU (if available, else CPU), loads the dataset with it's specific processing type, creates the model, defines the optimizer & learning rate, then loads saved model weights into previously created model
+        Raises:
+            Exception: if processing type is not given (R_A, O_A, R_NA)
+            Exception: if optimizer not implement (sgd, adam)
+            Exception: if lr schedule not implement (step, exp, stepLR, fix)
         """
         args = self.args
 
@@ -118,7 +129,6 @@ class train_utils(object):
     def train(self):
         """
         Training process
-        :return:
         """
         args = self.args
 
@@ -232,8 +242,7 @@ class train_utils(object):
             logging.info("saving best model epoch {}, acc {:.4f}".format(tmp_epoch, best_acc))
             torch.save(tmp_state_dict, os.path.join(self.save_dir, '{}-{:.4f}-best_model.pth'.format(tmp_epoch, best_acc)))
         else:
-            pass
-            #TODO: add check; if trained model is better than existing one, replace it            
+            pass       
 
 
 

@@ -17,7 +17,9 @@ csv_header=None
 vol_path='/benchmark/volume_data'
 dataset_folder_name = {"SEU":"Mechanical-datasets", "MFPT":"MFPT_Fault_Data_Sets", "CWRU": "CWRU", "PU":"Paderborn", "XJTU":"XJTU-SY_Bearing_Datasets"}
 def parse_args():
-
+    """
+    Function to parse keyboard arguments. Use train_main.py -h for a detailed description of available arguments
+    """
     parser = argparse.ArgumentParser(description='Train')
 
     # basic parameters
@@ -59,6 +61,11 @@ def parse_args():
     return args
 
 def folder_check(folder_path: str = None):
+    """Checks if folder_path exists. If not, it creates it.
+
+    Args:
+        folder_path (str): path to check/create folder. Defaults to None.
+    """
     isdir = os.path.isdir(folder_path)
     if isdir:
         pass
@@ -67,6 +74,15 @@ def folder_check(folder_path: str = None):
     
 
 def create_folder(model_name: str = None, dataset: str = None):
+    """Creates necessary folder paths inside the container where results will be saved 
+
+    Args:
+        model_name (str): Name of model to be evaluated. Defaults to None.
+        dataset (str): Name of dataset folder to be created. Defaults to None.
+
+    Returns:
+        model_folder (str): Path where execution time results will be saved 
+    """
     global memory_limit, cpu_quota, cpu_quota_path, mem_rt_path, csv_header 
     folder_check(vol_path)
     dataset_folder = os.path.join(vol_path, dataset)

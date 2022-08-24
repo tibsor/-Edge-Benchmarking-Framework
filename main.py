@@ -1,9 +1,12 @@
 ####WRITING SCRIPT FILES####
-import subprocess
+import subprocess # used for calling bash commands 
 import sys
-import questionary
+import time # for exiting in case of error
+import questionary # used for TUI
 import os
-
+import json # keeping track of built docker images
+from datetime import datetime
+#from tqdm import tqdm
 cwd = os.getcwd()
 datasets_path = os.path.join(cwd, 'datasets')
 models_path = os.path.join(cwd,'src/models')
@@ -30,7 +33,7 @@ ram_top = int(mem_bytes/(1024.**2))  # MAX RAM memory in MB
 ram_bottom = 6 # minimum in MB required to run a docker container
 cpu_step = 0.1 # in CPU cores
 ram_step = 100 # in MB
-
+benchmark_options = ['cpu', 'ram']
 dataset_folder_name = {"SEU":"Mechanical-datasets", "MFPT":"MFPT_Fault_Data_Sets", "CWRU": "CWRU", "PU":"Paderborn", "XJTU":"XJTU-SY_Bearing_Datasets"}
 
 def folder_create(folder_path: str = None):
@@ -71,7 +74,8 @@ def get_dataset_folders(path: str = None):
 def build_image():
     image_name = 'bench_fw'
     tag = 'latest'
-    datasets = search_dataset(datasets_path)    
+    datasets = get_dataset_folders(datasets_path)    
+    
     for dataset in datasets:
         dockerfile_strings.append(f'COPY ./datasets/{dataset} /benchmark/{dataset}')
     write_dockerfile(dockerfile_strings)
@@ -81,7 +85,17 @@ def build_image():
         tag = questionary.text("Image tag: ").ask()
     build_output = os.system(f"docker build -t {image_name}:{tag} -f {dockerfile_path} .")
     if build_output == 0 :
-        print ("Image succesfully built!")
+        print ("Image succesfully built!\nSaving changes locally...\n")
+        # _tmp = {
+        #         "timedate": datetime.now(),
+        #         "image name": f"{image_name}",
+        #         "tag": f"{tag}",
+        #         "datasets": datasets
+        #         }
+        # json_obj = json.dumps(_tmp, indent = 4)
+        # del _tmp
+        # with open(f'{cwd}/image_index.json', 'a+') as file:
+        #     file.write(json_obj)
     else:
         print ("Failed to build image!")
         sys.exit(1)
@@ -96,12 +110,12 @@ def write_dockerfile(strings_to_write):
             file.write(f'{line}\n')
 
 def search_dataset(path):
-    if questionary.confirm(f'Search "{path}" for datasets?').ask():
-        datasets = get_dataset_folders(path)
-    else:
-        os.system("stty sane")
-        tmp_path = input("Input absolute path:")
-        datasets = get_dataset_folders(tmp_path)
+    # if questionary.confirm(f'Search "{path}" for datasets?').ask():
+    datasets = get_dataset_folders(path)
+    # else:
+    # os.system("stty sane")
+    # tmp_path = input("Input absolute path:")
+    # datasets = get_dataset_folders(tmp_path)
     return datasets
 
 
@@ -255,18 +269,14 @@ def write_ram_scripts(image_name, dataset_list, models, topl_list, bottoml_list,
             for line in ram_script_strings:
                 file.write(f'{line}\n')
     
-def make_executable(benchmark_options):
+
+def start_benchmark(benchmark_options):
     for process in ['train', 'inference']:
         for param in benchmark_options:
             makeExecutable = f'chmod +x {cwd}/scripts/{process}_{param}.sh'
-            subprocess.Popen(makeExecutable.split(), stdout=subprocess.PIPE).wait() # make script file executable
-
-def start_benchmark(benchmark_options):
-    make_executable(benchmark_options)
-    for process in ['train', 'inference']:
-        for param in benchmark_options:
+            call_subprocess(makeExecutable)
             bashCommand = f'{cwd}/scripts/{process}_{param}.sh'
-            benchmark = subprocess.Popen(['sh', bashCommand]).wait() # start benchmark
+            benchmark = call_subprocess(bashCommand)
 
 def create_scripts(benchmark_options, image_name, dataset_folders, models):
     scripts_path = os.path.join(cwd,'scripts')
@@ -316,18 +326,25 @@ def create_scripts(benchmark_options, image_name, dataset_folders, models):
                 ram_step = [ram_step_train, ram_step_inf]
             write_ram_scripts(image_name, folder_to_dataset(dataset_folders), models, ram_top, ram_bottom, ram_step, train_iterations, inf_iterations)
 
+def call_subprocess(command):
+    result = subprocess.run(['bash', command])
+    return result
+def read_json():
+    with open(f'{cwd}/image_index.json','r') as file:
+        json_data = json.load(file)
+
 
 if __name__ == "__main__":
     print ("Welcome!")
     print ("This script should be used for writing/building your Dockerfile and setting up the models to benchmark")
-    print ("If you already built the image, skip the next question")
     if questionary.confirm("Build new image?").ask():
         dataset_folders, image_name = build_image()
     else:
-        image_name = questionary.text("Input image name:").ask()
-        dataset_folders = search_dataset(datasets_path)
+        # read_json()
+        dataset_folders = get_dataset_folders(datasets_path)
     models_list = get_models(models_path)
     models = questionary.checkbox("Select models to benchmark:", choices=models_list).ask()
     benchmark_options = questionary.checkbox ("CPU/RAM benchmarking?",choices=["cpu", "ram"]).ask()
     create_scripts(benchmark_options, image_name, dataset_folders, models)
     start_benchmark(benchmark_options)
+    from . import seaborn_plot

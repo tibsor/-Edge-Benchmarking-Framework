@@ -13,7 +13,7 @@ RUN apt update
 # install necessary dependencies for python packages
 RUN apt install -y libglib2.0-0 libsm6 libxrender1 libxext6
 # get env packages & install them
-COPY ./src/local_env.txt /benchmark/requirements.txt 
+COPY ./src/conda_env.txt /benchmark/requirements.txt 
 RUN pip install -r requirements.txt
 
 

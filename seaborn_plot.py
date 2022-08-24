@@ -9,7 +9,7 @@ import re
 import bisect
 
 ##### Lists ##### 
-model_name_list = ['MLP', 'Resnet1d', 'Alexnet1d', 'LeNet1d', 'CNN_1d', 'Sae1d', 'Ae1d', 'BiLSTM1d']
+model_name_list = ['MLP', 'Resnet1d', 'Alexnet1d', 'LeNet1d', 'CNN_1d', 'BiLSTM1d']
 dataset_name_list = ['SEU', 'MFPT', 'CWRU']
 
 ##### File names #####
@@ -27,8 +27,16 @@ lowest_model_memory_run = 10000 # given in MB
 epoch_begin_pattern = '-----Epoch'
 train_log_file_pattern = 'training.log'
 cwd = os.getcwd()
+CNN_name = 'CNN1d'
+alexnet_name = 'AlexNet1d'
+resnet_name = 'ResNet1d'
 
 def folder_create(folder_path: str = None):
+    """Checks if folder_path exists. If not, it creates it.
+
+    Args:
+        folder_path (str): path to check/create folder. Defaults to None.
+    """
     isdir = os.path.isdir(folder_path)
     if isdir:
         pass
@@ -36,6 +44,14 @@ def folder_create(folder_path: str = None):
         os.mkdir(folder_path)
         
 def folder_check(folder_path: str = None):
+    """Checks if folder_path exists. Returns boolean value of evaluation
+
+    Args:
+        folder_path (str): path to check. Defaults to None.
+    
+    Returns:
+        True/False: True if folder exists, else false
+    """
     isdir = os.path.isdir(folder_path)
     if isdir:
         return True
@@ -43,13 +59,39 @@ def folder_check(folder_path: str = None):
         return False
 
 def file_check(file_path: str = None):
+    """Checks if file_path exists. Returns boolean value of evaluation
+
+    Args:
+        file_path (str): path to check. Defaults to None.
+    
+    Returns:
+        True/False: True if file exists, else false
+    """
     isfile = os.path.isfile(file_path)
     if isfile:
         return True
     else:
         return False
 
+def plot_init():
+    sns.set_theme(style='white', font_scale=1.5, color_codes=True, rc={"figure.dpi":100, 'savefig.dpi':1000, "figure.figsize":(12, 6)})
+    # sns.set_style("white")
+    # sns.axes_style("white")
+    # sns.set(font_scale = 1.5, )
+    # sns.color_palette()
 def single_plots(x_axis: list = None, x1_axis: list = None, y_axis: list = None, model_name: str = None, dataset_name: str = None, RAM_flag: bool = False, CPU_flag: bool = False, train_flag: bool = False):
+    """_summary_
+
+    Args:
+        x_axis (list): Contains each function execution times as a list in this order -> args, init, setup, eval . Defaults to None.
+        x1_axis (list): Total execution time for each run. Defaults to None.
+        y_axis (list): RAM or CPU quota value for each run. Defaults to None.
+        model_name (str)
+        dataset_name (str)
+        RAM_flag (bool): If this is active then CPU_flag must be false. Defaults to False.
+        CPU_flag (bool): If this is active then RAM_flag must be false. Defaults to False.
+        train_flag (bool): If it is false, then inference plots will be generated. If True, train plots will be generated. Defaults to False.
+    """
     cwd = os.getcwd()
     args_time_list=[]
     init_time_list=[]
@@ -341,10 +383,16 @@ def epoch_plot (cpu_runtime_values = None, ram_runtime_values = None, model_name
 
     print ("Epoch plot done!")
 
-def plot_all_models(dir, cpu_limit: int = None):
+def plot_all_models(dir: str = os.getcwd(), cpu_limit: int = None):
+    """CURRENTLY NOT WORKING: Generates combined training plot of all available models for each individual dataset.
+
+    Args:
+        dir (str): Path to logs directory. Defaults to cwd.
+        cpu_limit (int): Top limit for CPU plotting (e.g 1 core). Defaults to None.
+    """
     cwd = os.getcwd()
     host_data_path = os.path.join(cwd,'host_data')
-    dataset_folder_list = ['SEU', 'CWRU', 'MFPT']
+    dataset_folder_list = ['SEU', 'MFPT']
     model_folder_list = ['MLP', 'Alexnet1d', 'CNN_1d', 'Resnet1d', 'LeNet1d', 'BiLSTM1d']                                                                                                  
     ram_big_boy_list = []
     r = []
@@ -354,15 +402,15 @@ def plot_all_models(dir, cpu_limit: int = None):
     memory_values_list = []
     train_cpu_file_name = "train_cpu_quota_runtime_values.csv"
     train_memory_file_name = "train_memory_runtime_values.csv"
-    model_list = questionary.checkbox("Choose models to overlay:", choices=model_folder_list).ask()
+    # model_list = questionary.checkbox("Choose models to overlay:", choices=model_folder_list).ask()
     timedate_length = 23                                                                                                  
     subdirs = [x[0] for x in os.walk(dir)]
+    lowest_ram_list = []
     for dataset in dataset_folder_list:
         print(f"At {dataset}\n")
-        lowest_ram_list = []
         ram_big_boy_list = []
         cpu_big_boy_list = []
-        for model in model_list:
+        for model in model_name_list:
             x_axis_cpu = []
             x_axis_ram = []
             lowest_model_memory_run = 10000
@@ -511,10 +559,23 @@ def plot_all_models(dir, cpu_limit: int = None):
                             CPU_qtc = int(train_run_quota)/100000.0 #qtc = quota to cores
                             if cpu_limit == None or cpu_limit > CPU_qtc:
                                 for item in x_axis_cpu:
-                                    cpu_big_boy_list.append([model, item, CPU_qtc])
+                                    if model == 'CNN_1d':
+                                        cpu_big_boy_list.append([CNN_name, item, CPU_qtc])
+                                    elif model == 'Alexnet1d':
+                                        cpu_big_boy_list.append([alexnet_name, item, CPU_qtc])
+                                    elif model == 'Resnet1d':
+                                        cpu_big_boy_list.append([resnet_name, item, CPU_qtc])
+                                    else:
+                                        cpu_big_boy_list.append([model, item, CPU_qtc])
             if lowest_model_memory_run != 10000:
-                lowest_ram_list.append([model, lowest_model_memory_run])
-        low_ram_df = pd.DataFrame(lowest_ram_list, columns=['Models', 'Minimum RAM'])
+                if model == 'CNN_1d':
+                    lowest_ram_list.append([dataset, CNN_name, lowest_model_memory_run])
+                elif model == 'Alexnet1d':
+                    lowest_ram_list.append([dataset, alexnet_name, lowest_model_memory_run])
+                elif model == 'Resnet1d':
+                    lowest_ram_list.append([dataset, resnet_name, lowest_model_memory_run])
+                else:
+                    lowest_ram_list.append([dataset, model, lowest_model_memory_run])
         cpu_big_df = pd.DataFrame(cpu_big_boy_list, columns=['Model', 'Time', 'CPU Cores'])
         # ram_big_boy_df = pd.DataFrame(ram_big_boy_list, columns=['Model', 'Time', 'RAM(MB)'])
         cpu_big_df = remove_outlier(cpu_big_df,'Time')
@@ -523,12 +584,19 @@ def plot_all_models(dir, cpu_limit: int = None):
         ax2 = sns.relplot(data=cpu_big_df, x='CPU Cores', y='Time', hue='Model', kind='line', height=7, aspect=5/4)
         save_fig(ax2, f"{dataset}\nCPU Cores vs Epoch Time (seconds))", f'{cwd}/plots/{dataset}_CPU_epoch_all_models.svg')
         plt.figure()
-        ax3 = sns.barplot(data=low_ram_df, x='Models', y='Minimum RAM').set_title(f"Dataset:{dataset}\nMinimum RAM required for training")
-        fig = ax3.get_figure()
-        fig.savefig(f'{cwd}/plots/{dataset}_RAM_bar_plot_train.svg')
-        
+    low_ram_df = pd.DataFrame(lowest_ram_list, columns=['Dataset', 'Model', 'Minimum RAM'])
+    ax3 = sns.barplot(data=low_ram_df, x='Model', y='Minimum RAM', hue='Dataset').set_title(f"Dataset:Minimum RAM required for training")
+    fig = ax3.get_figure()
+    fig.savefig(f'{cwd}/plots/RAM_bar_plot_train.svg')
+    
 
 def inference_plot(dir, cpu_limit: int = None):
+    """Generate combined inference plot of all available models for each individual dataset
+
+    Args:
+        dir (str): Path to logs directory. Defaults to cwd.
+        cpu_limit (int): Top limit for CPU plotting (e.g 1 core). Defaults to None.
+    """
     cwd = os.getcwd()                                                                                               
     ram_big_list = []
     cpu_big_list = []
@@ -558,7 +626,14 @@ def inference_plot(dir, cpu_limit: int = None):
                 for runtime_list in cpu_values_list:
                     CPU_qtc= float(runtime_list[1])/100000.0 # qtc=quota_to_core; convert cpu quota to cpu cores for easier interpretation
                     if cpu_limit == None or cpu_limit > CPU_qtc:
-                        cpu_big_list.append([model, float(runtime_list[-1])/10.0, CPU_qtc])
+                        if model == 'CNN_1d':
+                            cpu_big_list.append([CNN_name, float(runtime_list[-1])/10.0, CPU_qtc])                            
+                        elif model == 'Alexnet1d':
+                            cpu_big_list.append([alexnet_name, float(runtime_list[-1])/10.0, CPU_qtc])
+                        elif model == 'Resnet1d':
+                            cpu_big_list.append([resnet_name, float(runtime_list[-1])/10.0, CPU_qtc])
+                        else:
+                            cpu_big_list.append([model, float(runtime_list[-1])/10.0, CPU_qtc])
                     # for function_time in runtime_list[2:]:
                     #     function_time_list.append(float(function_time))
                     #     time_sum+=float(function_time)
@@ -577,18 +652,31 @@ def inference_plot(dir, cpu_limit: int = None):
                     if lowest_model_memory_run > int(runtime_list[1]):
                         lowest_model_memory_run = int(runtime_list[1])
                 if lowest_model_memory_run != 10000:
-                    lowest_ram_list.append([model, lowest_model_memory_run])
-        low_ram_df = pd.DataFrame(lowest_ram_list, columns=['Models', 'Minimum RAM'])
+                    if model == 'CNN_1d':
+                        lowest_ram_list.append([dataset, CNN_name, lowest_model_memory_run])
+                    elif model == 'Alexnet1d':
+                        lowest_ram_list.append([dataset, alexnet_name, lowest_model_memory_run])
+                    elif model == 'Resnet1d':
+                        lowest_ram_list.append([dataset, resnet_name, lowest_model_memory_run])
+                    else:
+                        lowest_ram_list.append([dataset, model, lowest_model_memory_run])
         cpu_big_df = pd.DataFrame(cpu_big_list, columns=['Model', 'Time(s)', 'CPU Cores'])
         
         cpu_plot = sns.relplot(data=cpu_big_df, x='CPU Cores', y='Time(s)', hue='Model', kind='line', height=7, aspect=5/4)
         save_fig(cpu_plot,f"{dataset}\nCPU Cores vs Inference Time\nFor 1 observation", f'{cwd}/plots/{dataset}_CPU_inf_all.svg')
         plt.figure()
-        ram_bar_plot = sns.barplot(data=low_ram_df, x='Models', y='Minimum RAM').set_title(f"Dataset:{dataset}\nMinimum RAM required for inference",y=1.08)
-        fig = ram_bar_plot.get_figure()
-        fig.savefig(f'{cwd}/plots/{dataset}_RAM_bar_plot_inference.svg')
+    low_ram_df = pd.DataFrame(lowest_ram_list, columns=['Dataset', 'Model', 'Minimum RAM'])
+    ram_bar_plot = sns.barplot(data=low_ram_df, x='Model', y='Minimum RAM', hue='Dataset').set_title(f"Minimum RAM required for inference")
+    fig = ram_bar_plot.get_figure()
+    fig.savefig(f'{cwd}/plots/RAM_bar_plot_inference.svg')
 
 def cpu_eval_plot(dir, cpu_limit: int = None):
+    """Generate combined inference plot of all available models for each individual dataset
+
+    Args:
+        dir (str): Path to logs directory. Defaults to cwd.
+        cpu_limit (int): Top limit for CPU plotting (e.g 1 core). Defaults to None.
+    """
     cwd = os.getcwd()
     cpu_values_list = None
     train_cpu_file_name = "train_cpu_quota_runtime_values.csv"
@@ -596,8 +684,8 @@ def cpu_eval_plot(dir, cpu_limit: int = None):
     cpu_big_list = []
     global model_dict
     dataset_folders = f'{cwd}/host_data'
-    dataset_name_list = ['SEU', 'MFPT']
-    model_name_list = ['LeNet1d', 'Alexnet1d', 'Resnet1d', 'MLP', 'CNN_1d']
+    # dataset_name_list = ['SEU', 'MFPT']
+    # model_name_list = ['LeNet1d', 'Alexnet1d', 'Resnet1d', 'MLP', 'CNN_1d', 'BiLSTM1d']
     for dataset_name in dataset_name_list:
         model_folders = os.path.join(dataset_folders,dataset_name)
         for model_name in model_name_list:
@@ -613,7 +701,14 @@ def cpu_eval_plot(dir, cpu_limit: int = None):
                 for runtime_list in cpu_values_list:
                     CPU_qtc= float(runtime_list[1])/100000.0 # convert cpu quota to cpu cores for easier interpretation
                     if cpu_limit == None or cpu_limit > CPU_qtc:
-                        cpu_big_list.append([model_name, float(runtime_list[-1]), CPU_qtc])
+                        if model_name == 'CNN_1d':
+                            cpu_big_list.append([CNN_name, float(runtime_list[-1])/10, CPU_qtc])
+                        elif model_name == 'Alexnet1d':
+                            cpu_big_list.append([alexnet_name, float(runtime_list[-1])/10, CPU_qtc])
+                        elif model_name == 'Resnet1d':
+                            cpu_big_list.append([resnet_name, float(runtime_list[-1])/10, CPU_qtc])
+                        else:
+                            cpu_big_list.append([model_name, float(runtime_list[-1])/10, CPU_qtc])
         cpu_big_df = pd.DataFrame(cpu_big_list, columns=['Model', 'Time(s)', 'CPU Cores'])
         ax1 = sns.relplot(data=cpu_big_df, x='CPU Cores', y='Time(s)', hue='Model', kind='line', height=7, aspect=5/4)
         save_fig(ax1, f"{dataset_name}\nCPU Cores vs Train Time", f"{cwd}/plots/{dataset_name}_CPU_train_all.svg")
@@ -624,12 +719,21 @@ def get_subdirs(path):
     pass
 
 def save_fig(figure, title: str = None, path: str = None):
-    figure.fig.suptitle(title, y=1.08) # y - used to increase title height 
-    figure.savefig(path)
-    plt.close()
+    """Function for saving figures
+
+    Args:
+        figure: object to save 
+        title (str, optional): Title of the figure. Defaults to None.
+        path (str, optional): Path to save figure. Defaults to None.
+    """
+    with sns.axes_style("white"):
+        figure.fig.suptitle(title, y=1.08) # y - used to increase title height 
+        figure.savefig(path)
+        plt.close()
 
 
 def remove_outlier(df_in, col_name):
+    
     q1 = df_in[col_name].quantile(0.25)
     q3 = df_in[col_name].quantile(0.75)
     iqr = q3-q1 #Interquartile range
@@ -639,6 +743,11 @@ def remove_outlier(df_in, col_name):
     return df_out
 
 def input_limit():
+    """Function that takes user input for the limit of CPU core plot 
+
+    Returns:
+        value: Limit that user has inputed
+    """
     os.system("stty sane")
     while True:
         try:
@@ -698,6 +807,7 @@ if __name__=="__main__":
     # else: print("No CPU file found!")
     # if train_flag:
     #     epoch_plot(cpu_runtime_values=cpu_values_list, ram_runtime_values=memory_values_list, model_name=model_name, dataset_name=dataset_name)
+    plot_init()
     folder_create(os.path.join(os.getcwd(),'plots'))
     tmp_flag = questionary.confirm("Train overlay plot?").ask()
     cpu_limit = None
